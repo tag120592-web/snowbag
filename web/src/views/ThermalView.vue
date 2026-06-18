@@ -43,21 +43,13 @@ function toggleModule(id: string, ready: boolean) {
   if (ready) modules.value[id] = !modules.value[id]
 }
 
-async function goToData() {
+function goToData() {
   if (!pickedId.value) {
     localError.value = 'Выберите проект'
     return
   }
-  localError.value = ''
-  if (modules.value.snow && !modules.value.thermal) {
-    router.push(`/wizard/${pickedId.value}`)
-    return
-  }
-  t.reset(pickedId.value)
-  await t.loadGeometry()
-  phase.value = 'wizard'
-  step.value = 0
-  await t.runCalc()
+  const calc = [modules.value.snow ? 'snow' : '', modules.value.thermal ? 'thermal' : ''].filter(Boolean).join(',')
+  router.push(`/wizard/${pickedId.value}?calc=${calc}`)
 }
 async function next() {
   if (step.value === 0) {
