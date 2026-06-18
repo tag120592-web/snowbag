@@ -57,8 +57,18 @@ func (h *Handler) geocode(w http.ResponseWriter, r *http.Request) {
 
 	if res, err := h.geocodeYandex(ctx, search); err == nil {
 		res.Address = q
+		if res.Label == "" {
+			res.Label = q
+		}
 		writeJSON(w, http.StatusOK, res)
 		return
+	}
+	if parsed, ok := parseRussianAddressLoose(q); ok {
+		if res, err := h.geocodeNominatimStructured(ctx, parsed); err == nil {
+			res.Address = q
+			writeJSON(w, http.StatusOK, res)
+			return
+		}
 	}
 	if parsed, ok := parseRussianAddress(q); ok {
 		if res, err := h.geocodeNominatimStructured(ctx, parsed); err == nil {
@@ -155,6 +165,13 @@ func isPreciseEnough(res geocodeResponse, query string) bool {
 }
 
 func parseRussianAddress(query string) (parsedAddress, bool) {
+	if parsed, ok := parseRussianAddressComma(query); ok {
+		return parsed, true
+	}
+	return parseRussianAddressLoose(query)
+}
+
+func parseRussianAddressComma(query string) (parsedAddress, bool) {
 	parts := strings.Split(query, ",")
 	clean := make([]string, 0, len(parts))
 	for _, part := range parts {
@@ -200,6 +217,48 @@ func parseRussianAddress(query string) (parsedAddress, bool) {
 		return parsedAddress{}, false
 	}
 	return parsedAddress{City: city, Street: street}, true
+}
+
+var looseStreetPattern = regexp.MustCompile(`(?i)(?:^|[\s,]+)((?:ул\.?|улица|пр\.?|проспект|пер\.?|переулок|ш\.?|шоссе|б-?р\.?|бульвар|наб\.?|набережная|пл\.?|площадь)\.?\s*[^,\d]+?)\.?\s*(?:д\.?|дом|стр\.?|к\.?|корп\.?|корпус)?\.?\s*(\d+[а-яa-z]?)(?:[\s,]|$)`)
+
+func parseRussianAddressLoose(query string) (parsedAddress, bool) {
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return parsedAddress{}, false
+	}
+
+	cityName, hasCity := cityMentionedInQuery(q)
+	if !hasCity {
+		return parsedAddress{}, false
+	}
+
+	if m := looseStreetPattern.FindStringSubmatch(q); len(m) >= 3 {
+		street := strings.TrimSpace(m[1])
+		house := strings.TrimSpace(m[2])
+		street = strings.NewReplacer(
+			"г.", "", "г ", "",
+		).Replace(street)
+		street = strings.Join(strings.Fields(street), " ")
+		if street != "" && house != "" {
+			return parsedAddress{
+				City:   titleFirst(cityName),
+				Street: street + " " + house,
+			}, true
+		}
+	}
+
+	// "Екатеринбург Примерная 15" — street name without prefix, trailing house number
+	if queryHasHouseNumber(q) {
+		lowerCity := strings.ToLower(cityName)
+		rest := strings.TrimSpace(strings.ReplaceAll(strings.ToLower(q), lowerCity, ""))
+		rest = strings.NewReplacer("г.", "", "г ", "", "россия", "").Replace(rest)
+		rest = strings.Join(strings.Fields(rest), " ")
+		if rest != "" {
+			return parsedAddress{City: titleFirst(cityName), Street: rest}, true
+		}
+	}
+
+	return parsedAddress{}, false
 }
 
 func (h *Handler) geocodeNominatimStructured(ctx context.Context, parsed parsedAddress) (geocodeResponse, error) {

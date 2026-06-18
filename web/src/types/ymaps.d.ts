@@ -15,9 +15,18 @@ declare global {
 interface YMap {
   geoObjects: { add: (obj: unknown) => void; remove: (obj: unknown) => void }
   setCenter: (center: number[], zoom?: number, options?: Record<string, unknown>) => void
+  getCenter: () => number[]
+  getZoom: () => number
   setType: (type: string) => void
   destroy: () => void
-  events: { add: (event: string, handler: (e: { get: (key: string) => number[] }) => void) => void }
+  behaviors: {
+    enable: (behavior: string) => void
+    disable: (behavior: string) => void
+  }
+  events: {
+    add: (event: string, handler: (e: { get: (key: string) => number[] }) => void) => void
+    remove: (event: string, handler: () => void) => void
+  }
 }
 
 interface YGeocodeResult {
