@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import YandexMapPane from '@/components/YandexMapPane.vue'
 import type { MapSelectPayload } from '@/types'
 import {
@@ -57,7 +57,7 @@ const dragOver = ref(false)
 const pdfLoading = ref(false)
 const pdfConfirming = ref(false)
 const pdfError = ref('')
-const pdfDoc = ref<PdfDocument | null>(null)
+const pdfDoc = shallowRef<PdfDocument | null>(null)
 const pdfPageCount = ref(0)
 const pdfSelectedPage = ref(1)
 const pdfThumbnails = ref<Record<number, string>>({})
@@ -104,7 +104,6 @@ async function loadPdfPickState(file: File) {
   try {
     const pdf = await loadPdfFromFile(file)
     if (token !== pdfLoadToken) return
-    pdfDoc.value = pdf
     pdfPageCount.value = pdf.numPages
 
     const thumbs: Record<number, string> = {}
@@ -113,6 +112,7 @@ async function loadPdfPickState(file: File) {
       thumbs[i] = await renderPageToDataUrl(pdf, i, 160)
       pdfThumbnails.value = { ...thumbs }
     }
+    pdfDoc.value = pdf
     await renderPickPreview()
   } catch (err) {
     if (token !== pdfLoadToken) return
@@ -132,7 +132,7 @@ async function renderPickPreview() {
       continue
     }
     try {
-      await renderPageToCanvas(pdfDoc.value, pdfSelectedPage.value, pdfCanvas.value, 560)
+      await renderPageToCanvas(pdfDoc.value, pdfSelectedPage.value, pdfCanvas.value, 1200)
       return
     } catch (err) {
       if (attempt === 9) {
@@ -144,6 +144,7 @@ async function renderPickPreview() {
 
 async function renderPdfPreview(url: string) {
   previewError.value = ''
+  const pageNum = displayPage.value
   for (let attempt = 0; attempt < 10; attempt += 1) {
     await nextTick()
     if (!pdfCanvas.value) {
@@ -160,7 +161,7 @@ async function renderPdfPreview(url: string) {
         data = await res.arrayBuffer()
       }
       const pdf = await loadPdfFromFile(new File([data], 'underlay.pdf', { type: 'application/pdf' }))
-      await renderPageToCanvas(pdf, 1, pdfCanvas.value, 560)
+      await renderPageToCanvas(pdf, pageNum, pdfCanvas.value, 1200)
       return
     } catch (err) {
       if (attempt === 9) {
@@ -191,7 +192,7 @@ watch(pdfSelectedPage, () => {
 })
 
 watch(
-  () => [props.underlaySrc, isPdfPreview.value, isPdfPicking.value] as const,
+  () => [props.underlaySrc, isPdfPreview.value, isPdfPicking.value, displayPage.value] as const,
   ([src, isPdf, picking]) => {
     if (picking || !src || !isPdf) return
     void renderPdfPreview(src)
@@ -447,8 +448,8 @@ function onImageError() {
   background: #fff; border: 1px solid var(--border-secondary-enabled); box-shadow: var(--shadow-small);
   border-radius: 4px; padding: 18px; transition: transform .25s; max-width: 100%;
 }
-.underlay { display: block; max-width: 560px; max-height: 380px; object-fit: contain; filter: grayscale(1) opacity(.85); }
-.pdf-canvas { display: block; max-width: 560px; max-height: 380px; filter: grayscale(1) opacity(.85); }
+.underlay { display: block; max-width: 900px; max-height: 620px; object-fit: contain; }
+.pdf-canvas { display: block; max-width: 900px; max-height: 620px; image-rendering: auto; }
 .preview-placeholder {
   width: 560px; max-width: 100%; height: 280px; display: flex; align-items: center; justify-content: center;
   background: var(--neutral-10); color: var(--content-tertiary-enabled); font-size: 14px;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { getPublicConfig } from '@/api/client'
 import { geocodeAddress } from '@/utils/geocode'
 import type { MapSelectPayload } from '@/types'
@@ -9,7 +9,11 @@ const props = defineProps<{
   lat?: number | null
   lon?: number | null
   city?: string
+  /** When false, map is view-only (for geometry tracing overlay). */
+  interactive?: boolean
 }>()
+
+const interactive = computed(() => props.interactive !== false)
 
 const emit = defineEmits<{
   select: [payload: MapSelectPayload]
@@ -30,6 +34,7 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'новосибирск': [55.0084, 82.9357],
   'челябинск': [55.1644, 61.4368],
   'тюмень': [57.153, 65.5343],
+  'волгоград': [48.7082, 44.5153],
 }
 
 function applyGeocodeResult(result: { address: string; lat: number; lon: number }) {
@@ -122,13 +127,17 @@ async function initMap() {
     if (props.lat != null && props.lon != null) {
       setPlacemark(props.lat, props.lon)
     }
-    map.events.add('click', (event: { get: (key: string) => number[] }) => {
-      const coords = event.get('coords')
-      const lat = coords[0]
-      const lon = coords[1]
-      setPlacemark(lat, lon)
-      emit('select', { address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, lat, lon })
-    })
+    if (interactive.value) {
+      map.events.add('click', (event: { get: (key: string) => number[] }) => {
+        const coords = event.get('coords')
+        const lat = coords[0]
+        const lon = coords[1]
+        setPlacemark(lat, lon)
+        emit('select', { address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, lat, lon })
+      })
+    } else {
+      map.behaviors.disable('scrollZoom')
+    }
   } catch (e) {
     scriptPromise = null
     loadError.value = e instanceof Error ? e.message : 'Не удалось загрузить Яндекс.Карты'

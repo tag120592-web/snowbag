@@ -1,20 +1,27 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { DrawSession, EditTarget } from '@/composables/useRoofDrawing'
 import {
   MIN_RADIUS,
   MIN_RECT,
+  PX_PER_M,
+  closedPolylineLengthPx,
+  formatLengthM,
   moveCircle,
   moveRect,
   moveVertex,
+  orthogonalPoint,
+  polylineLengthPx,
+  rectDragWithOrthogonal,
   rectFromDrag,
   resizeCircle,
   resizeRect,
+  segmentLengthPx,
   svgPointFromEvent,
 } from '@/composables/useRoofDrawing'
 import type { GeometryData, CalculationData, Obstacle } from '@/types'
 import WindRose from '@/components/WindRose.vue'
-import RoofScene3D from '@/components/RoofScene3D.vue'
+const RoofScene3D = defineAsyncComponent(() => import('@/components/RoofScene3D.vue'))
 
 const props = defineProps<{
   geometry: GeometryData
@@ -29,6 +36,8 @@ const props = defineProps<{
   editTarget?: EditTarget | null
   previewWindRose?: CalculationData['windRose']
   showParapet?: boolean
+  orthogonal?: boolean
+  transparentBg?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -62,7 +71,7 @@ const circleDraft = ref<CircleDraw | null>(null)
 const cursorPt = ref<[number, number] | null>(null)
 
 type EditDrag =
-  | { kind: 'vertex'; target: 'roof' | 'walkway'; index: number }
+  | { kind: 'vertex'; target: 'roof' | 'walkway' | 'polyline'; obstacleId?: string; index: number }
   | { kind: 'rect-move'; id: string; start: [number, number]; origX: number; origY: number }
   | { kind: 'rect-corner'; id: string; corner: number }
   | { kind: 'circle-move'; id: string; start: [number, number]; origCx: number; origCy: number }
@@ -91,6 +100,8 @@ const selectedObstacleId = computed(() => {
   return null
 })
 
+const roofSelected = computed(() => props.editTarget === 'roof')
+
 function ptsStr(pts: number[][]) {
   return pts.map((p) => p.join(',')).join(' ')
 }
@@ -111,6 +122,12 @@ watch(() => props.drawSession, (s) => {
   if (s?.tool === 'polyline') polyDraft.value = { points: [] }
 })
 
+function snapDrawPoint(pt: [number, number]): [number, number] {
+  if (!props.orthogonal || !polyDraft.value?.points.length) return pt
+  const anchor = polyDraft.value.points[polyDraft.value.points.length - 1] as [number, number]
+  return orthogonalPoint(anchor, pt)
+}
+
 function onCanvasMove(e: MouseEvent) {
   const svg = getSvg()
   if (!svg) return
@@ -121,7 +138,11 @@ function onCanvasMove(e: MouseEvent) {
     return
   }
 
-  const pt = svgPointFromEvent(svg, e)
+  let pt = svgPointFromEvent(svg, e)
+  if (isDrawing.value && props.drawSession?.tool === 'polyline') {
+    pt = snapDrawPoint(pt)
+  }
+
   cursorPt.value = pt
 
   if (editDrag.value) {
@@ -130,7 +151,10 @@ function onCanvasMove(e: MouseEvent) {
   }
 
   if (rectDraft.value) {
-    rectDraft.value = { ...rectDraft.value, current: pt }
+    const end = props.orthogonal
+      ? rectDragWithOrthogonal(rectDraft.value.start, pt, true)
+      : pt
+    rectDraft.value = { ...rectDraft.value, current: end }
   } else if (circleDraft.value && circleDraft.value.center) {
     circleDraft.value = { ...circleDraft.value, current: pt }
   }
@@ -141,6 +165,14 @@ function handleEditDrag(pt: [number, number]) {
   if (!drag) return
 
   if (drag.kind === 'vertex') {
+    if (drag.target === 'polyline' && drag.obstacleId) {
+      const obs = props.geometry.obstacles?.find((o) => o.id === drag.obstacleId)
+      if (obs?.points) {
+        const next = moveVertex(obs.points, drag.index, pt)
+        emit('obstacleChange', { ...obs, points: next })
+      }
+      return
+    }
     const pts = drag.target === 'roof'
       ? props.geometry.roof ?? []
       : props.geometry.walkway ?? []
@@ -207,19 +239,21 @@ function handleDrawClick(pt: [number, number]) {
   const session = props.drawSession
   if (!session) return
 
+  const drawPt = session.tool === 'polyline' ? snapDrawPoint(pt) : pt
+
   if (session.tool === 'polyline') {
     if (!polyDraft.value) polyDraft.value = { points: [] }
-    polyDraft.value.points.push([...pt])
+    polyDraft.value.points.push([...drawPt])
     return
   }
 
   if (session.tool === 'rect') {
-    if (!rectDraft.value) rectDraft.value = { start: pt, current: pt }
+    if (!rectDraft.value) rectDraft.value = { start: drawPt, current: drawPt }
     return
   }
 
   if (session.tool === 'circle') {
-    if (!circleDraft.value) circleDraft.value = { center: pt, current: pt }
+    if (!circleDraft.value) circleDraft.value = { center: drawPt, current: drawPt }
   }
 }
 
@@ -231,6 +265,17 @@ function finishPolyline() {
 
   if (session.target === 'roof') emit('roofChange', pts.map((p) => [...p]))
   else if (session.target === 'walkway') emit('walkwayChange', pts.map((p) => [...p]))
+  else if (session.target === 'obstacle') {
+    emit('obstacleAdd', {
+      id: `poly-${Date.now()}`,
+      type: session.typeName ?? session.label,
+      short: session.short ?? session.label,
+      name: session.short ?? session.label,
+      shape: 'polyline',
+      points: pts.map((p) => [...p]),
+      hM: session.hM ?? 1,
+    })
+  }
 
   resetDrafts()
   emit('drawFinish')
@@ -298,11 +343,11 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
-function startVertexDrag(target: 'roof' | 'walkway', index: number, e: MouseEvent) {
+function startVertexDrag(target: 'roof' | 'walkway' | 'polyline', index: number, e: MouseEvent, obstacleId?: string) {
   if (!isEditing.value) return
   e.stopPropagation()
   e.preventDefault()
-  editDrag.value = { kind: 'vertex', target, index }
+  editDrag.value = { kind: 'vertex', target, index, obstacleId }
 }
 
 function startRectCornerDrag(id: string, corner: number, e: MouseEvent) {
@@ -378,6 +423,45 @@ const polylinePreview = computed(() => {
   return pts
 })
 
+const draftLengthLabel = computed(() => {
+  if (!polylinePreview.value || polylinePreview.value.length < 2) return ''
+  const session = props.drawSession
+  const px = session?.target === 'roof' && polyDraft.value?.points.length
+    && polyDraft.value.points.length >= 3
+    ? closedPolylineLengthPx(polylinePreview.value.slice(0, -1))
+    : polylineLengthPx(polylinePreview.value)
+  return formatLengthM(px)
+})
+
+function segmentMidpoint(a: number[], b: number[]): [number, number] {
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+}
+
+function roofSegmentLabels(points: number[][]) {
+  if (points.length < 2) return []
+  const labels: Array<{ x: number; y: number; text: string }> = []
+  for (let i = 0; i < points.length; i += 1) {
+    const a = points[i]
+    const b = points[(i + 1) % points.length]
+    if (i === points.length - 1 && points.length < 3) break
+    const [x, y] = segmentMidpoint(a, b)
+    labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
+  }
+  return labels
+}
+
+function openPolylineLabels(points: number[][]) {
+  if (points.length < 2) return []
+  const labels: Array<{ x: number; y: number; text: string }> = []
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1]
+    const b = points[i]
+    const [x, y] = segmentMidpoint(a, b)
+    labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
+  }
+  return labels
+}
+
 const displayWindRose = computed(() => {
   if (props.previewWindRose?.length) return props.previewWindRose
   return props.calculation?.windRose
@@ -401,13 +485,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
       ref="svgRef"
       viewBox="0 0 1000 680"
       class="canvas"
+      :class="{ 'canvas--overlay': transparentBg }"
       @mousedown="onCanvasDown"
       @mousemove="onCanvasMove"
       @mouseup="onCanvasUp"
       @mouseleave="onCanvasUp"
       @dblclick="onCanvasDblClick"
     >
-      <rect x="0" y="0" width="1000" height="680" fill="var(--neutral-15)" />
+      <rect x="0" y="0" width="1000" height="680" :fill="transparentBg ? 'transparent' : 'var(--neutral-15)'" />
 
       <image
         v-if="show.underlay && underlayUrl"
@@ -416,7 +501,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
         y="0"
         width="1000"
         height="680"
-        opacity="0.45"
+        :opacity="transparentBg ? 1 : 0.72"
         preserveAspectRatio="xMidYMid meet"
       />
 
@@ -451,6 +536,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             @mousedown="startVertexDrag('roof', i, $event)"
           />
         </template>
+        <text
+          v-for="(lbl, i) in roofSegmentLabels(geometry.roof ?? [])"
+          :key="`rl-${i}`"
+          :x="lbl.x"
+          :y="lbl.y"
+          text-anchor="middle"
+          font-size="10"
+          font-weight="700"
+          fill="var(--red-60)"
+          pointer-events="none"
+        >{{ lbl.text }}</text>
       </g>
 
       <g v-if="show.walkway && geometry.walkway?.length">
@@ -519,6 +615,38 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               :stroke-width="selectedObstacleId === o.id ? 2.5 : 1.5"
               @mousedown="startCircleMove(o, $event)"
             />
+            <polyline
+              v-else-if="o.shape === 'polyline' && o.points?.length"
+              :points="ptsStr(o.points)"
+              fill="none"
+              :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--orange-40)'"
+              :stroke-width="selectedObstacleId === o.id ? 3 : 2"
+            />
+            <template v-if="selectedObstacleId === o.id && editable && !drawSession && o.shape === 'polyline' && o.points?.length">
+              <circle
+                v-for="(p, i) in o.points"
+                :key="`pv-${o.id}-${i}`"
+                :cx="p[0]"
+                :cy="p[1]"
+                r="6"
+                fill="#fff"
+                stroke="var(--red-60)"
+                stroke-width="2"
+                class="handle"
+                @mousedown="startVertexDrag('polyline', i, $event, o.id)"
+              />
+            </template>
+            <text
+              v-for="(lbl, i) in o.shape === 'polyline' ? openPolylineLabels(o.points ?? []) : []"
+              :key="`pl-${o.id}-${i}`"
+              :x="lbl.x"
+              :y="lbl.y"
+              text-anchor="middle"
+              font-size="10"
+              font-weight="700"
+              fill="var(--orange-40)"
+              pointer-events="none"
+            >{{ lbl.text }}</text>
             <template v-if="selectedObstacleId === o.id && editable && !drawSession && o.shape === 'rect' && o.w && o.h">
               <rect
                 v-for="(p, i) in [[o.x, o.y], [o.x! + o.w!, o.y], [o.x, o.y! + o.h!], [o.x! + o.w!, o.y! + o.h!]]"
@@ -578,6 +706,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           r="4"
           fill="var(--red-60)"
         />
+        <text
+          v-if="draftLengthLabel"
+          :x="polylinePreview?.[polylinePreview.length - 1]?.[0] ?? 500"
+          :y="(polylinePreview?.[polylinePreview.length - 1]?.[1] ?? 340) - 12"
+          text-anchor="middle"
+          font-size="12"
+          font-weight="800"
+          fill="var(--red-60)"
+        >{{ draftLengthLabel }}</text>
+        <text
+          v-for="(lbl, i) in openPolylineLabels(polylinePreview ?? [])"
+          :key="`dl-${i}`"
+          :x="lbl.x"
+          :y="lbl.y"
+          text-anchor="middle"
+          font-size="10"
+          font-weight="700"
+          fill="var(--red-60)"
+        >{{ lbl.text }}</text>
         <rect
           v-if="previewRect"
           :x="previewRect.x"
@@ -655,6 +802,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 .wrap { width: 100%; height: 100%; display: flex; }
 .wrap.crosshair { cursor: crosshair; }
 .canvas { width: 100%; height: 100%; display: block; }
+.canvas--overlay { background: transparent; }
 .draggable { cursor: grab; }
 .draggable:active { cursor: grabbing; }
 .selectable { cursor: pointer; }

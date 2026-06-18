@@ -17,13 +17,14 @@ export async function renderPageToCanvas(
 ) {
   const page = await pdf.getPage(pageNum)
   const base = page.getViewport({ scale: 1 })
-  const scale = Math.min(maxDimension / base.width, maxDimension / base.height, 3)
+  const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1
+  const scale = Math.min(maxDimension / base.width, maxDimension / base.height, 4) * dpr
   const viewport = page.getViewport({ scale })
   canvas.width = viewport.width
   canvas.height = viewport.height
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('canvas unavailable')
-  await page.render({ canvasContext: ctx, viewport, canvas }).promise
+  await page.render({ canvasContext: ctx, viewport }).promise
 }
 
 export async function renderPageToDataUrl(
@@ -39,7 +40,7 @@ export async function renderPageToDataUrl(
 export async function renderPageToBlob(
   pdf: PdfDocument,
   pageNum: number,
-  maxDimension = 2400,
+  maxDimension = 4000,
 ): Promise<Blob> {
   const dataUrl = await renderPageToDataUrl(pdf, pageNum, maxDimension)
   const res = await fetch(dataUrl)

@@ -44,8 +44,21 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 		sg = snowLoad(input.SnowRegion)
 	}
 
+	ce := input.Ce
+	if ce <= 0 {
+		ce = defaultCe
+	}
+	ct := input.Ct
+	if ct <= 0 {
+		ct = defaultCt
+	}
+	parapetMm := input.ParapetMm
+	if parapetMm <= 0 {
+		parapetMm = 600
+	}
+
 	northDeg := input.NorthDeg
-	bags := buildSnowbags(geom, sg, northDeg, windRose)
+	bags := buildSnowbags(geom, sg, northDeg, parapetMm, ce, ct, windRose)
 	sensors := placeSensors(bags, geom.Roof, geom.AreaM2, input.Sensors)
 
 	mpp := metersPerPixel(geom.Roof, geom.AreaM2)
@@ -55,14 +68,16 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 	}
 	var bagsM2 float64
 	risk := map[string]int{"critical": 0, "high": 0, "medium": 0}
-	maxMu := 0.0
+	maxS := 0.0
 	for _, b := range bags {
 		bagsM2 += float64(b.Area)
 		risk[b.Risk]++
-		if b.Mu > maxMu {
-			maxMu = b.Mu
+		s := ce * ct * b.Mu * sg
+		if s > maxS {
+			maxS = s
 		}
 	}
+	sd := 1.4 * maxS
 	share := 0.0
 	if roofM2 > 0 {
 		share = bagsM2 / roofM2 * 100
@@ -79,7 +94,7 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 			BagsShare: strings.ReplaceAll(formatNum1(share), ".", ","),
 			Sensors:   len(sensors),
 			Coverage:  coverage,
-			MaxLoad:   strings.ReplaceAll(formatNum1(maxMu*sg), ".", ","),
+			MaxLoad:   strings.ReplaceAll(formatNum1(sd), ".", ","),
 			MinDistM:  formatNum1(minDist),
 			AvgDistM:  formatNum1(avgDist),
 			Risk:      risk,

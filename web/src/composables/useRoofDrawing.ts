@@ -5,6 +5,8 @@ export const MIN_RECT = 20
 export const MIN_RADIUS = 5
 export const VIEW_W = 1000
 export const VIEW_H = 680
+/** Pixels per meter on the plan canvas (matches design prototype). */
+export const PX_PER_M = 6.6
 
 export type DrawTool = 'polyline' | 'rect' | 'circle'
 
@@ -27,6 +29,64 @@ export function snap(v: number, step = SNAP): number {
 
 export function snapPoint(x: number, y: number, step = SNAP): [number, number] {
   return [snap(x, step), snap(y, step)]
+}
+
+export function segmentLengthPx(a: number[], b: number[]): number {
+  return Math.hypot(b[0] - a[0], b[1] - a[1])
+}
+
+export function polylineLengthPx(points: number[][]): number {
+  if (points.length < 2) return 0
+  let total = 0
+  for (let i = 1; i < points.length; i += 1) {
+    total += segmentLengthPx(points[i - 1], points[i])
+  }
+  return total
+}
+
+export function closedPolylineLengthPx(points: number[][]): number {
+  if (points.length < 2) return polylineLengthPx(points)
+  let total = polylineLengthPx(points)
+  total += segmentLengthPx(points[points.length - 1], points[0])
+  return total
+}
+
+export function pxToM(px: number, pxPerM = PX_PER_M): number {
+  return px / pxPerM
+}
+
+export function formatLengthM(px: number, pxPerM = PX_PER_M): string {
+  const m = pxToM(px, pxPerM)
+  if (m < 10) return `${m.toFixed(1).replace('.', ',')} м`
+  return `${Math.round(m).toLocaleString('ru-RU')} м`
+}
+
+export function roofSideCount(points: number[][]): number {
+  return points.length >= 3 ? points.length : 0
+}
+
+export function sideLabel(index: number): string {
+  return `Сторона ${index + 1}`
+}
+
+/** Constrain pointer to horizontal or vertical axis from anchor. */
+export function orthogonalPoint(
+  anchor: [number, number],
+  pointer: [number, number],
+): [number, number] {
+  const dx = Math.abs(pointer[0] - anchor[0])
+  const dy = Math.abs(pointer[1] - anchor[1])
+  if (dx >= dy) return [snap(pointer[0]), anchor[1]]
+  return [anchor[0], snap(pointer[1])]
+}
+
+export function rectDragWithOrthogonal(
+  start: [number, number],
+  end: [number, number],
+  orthogonal: boolean,
+): [number, number] {
+  if (!orthogonal) return end
+  return orthogonalPoint(start, end)
 }
 
 export function clampView(x: number, y: number): [number, number] {
