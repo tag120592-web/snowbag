@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { VIEW_H, VIEW_W } from '@/composables/useRoofDrawing'
 import type { CalculationData, GeometryData } from '@/types'
 
 const props = defineProps<{
@@ -89,37 +90,33 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, cssW, cssH)
 
-  const b = grid.bounds
-  const widthM = b.max_x - b.min_x
-  const heightM = b.max_y - b.min_y
-  const scale = Math.min(cssW / widthM, cssH / heightM) * 0.92
-  const offsetX = (cssW - widthM * scale) / 2
-  const offsetY = (cssH - heightM * scale) / 2
+  // Match RoofCanvas SVG viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet"
+  const scale = Math.min(cssW / VIEW_W, cssH / VIEW_H)
+  const offsetX = (cssW - VIEW_W * scale) / 2
+  const offsetY = (cssH - VIEW_H * scale) / 2
 
-  const toCanvas = (xM: number, yM: number) => ({
-    x: offsetX + (xM - b.min_x) * scale,
-    y: cssH - (offsetY + (yM - b.min_y) * scale),
+  const toCanvas = (svgX: number, svgY: number) => ({
+    x: offsetX + svgX * scale,
+    y: offsetY + svgY * scale,
   })
 
   const rb = roofBounds(roof)
   const mpp = metersPerPixel(roof, props.areaM2 ?? 0)
+  const cellPx = Math.max(2, Math.ceil((grid.cell_size_m / mpp) * scale) + 1)
 
   ctx.save()
   ctx.beginPath()
-  const first = toCanvas(0, 0)
-  const mapRoof = (px: number, py: number) => toCanvas((px - rb.minX) * mpp, (py - rb.minY) * mpp)
-  const p0 = mapRoof(roof[0][0], roof[0][1])
+  const p0 = toCanvas(roof[0][0], roof[0][1])
   ctx.moveTo(p0.x, p0.y)
   for (let i = 1; i < roof.length; i++) {
-    const p = mapRoof(roof[i][0], roof[i][1])
+    const p = toCanvas(roof[i][0], roof[i][1])
     ctx.lineTo(p.x, p.y)
   }
   ctx.closePath()
   ctx.clip()
 
-  const cellPx = Math.max(2, Math.ceil(grid.cell_size_m * scale * 1.5) + 1)
   for (const cell of grid.grid) {
-    const { x, y } = toCanvas(cell.x, cell.y)
+    const { x, y } = toCanvas(rb.minX + cell.x / mpp, rb.minY + cell.y / mpp)
     ctx.fillStyle = heatColor(cell.value_kpa, grid.min_value_kpa, grid.max_value_kpa)
     ctx.fillRect(Math.floor(x - cellPx / 2), Math.floor(y - cellPx / 2), cellPx, cellPx)
   }
@@ -130,7 +127,7 @@ function draw() {
   ctx.beginPath()
   ctx.moveTo(p0.x, p0.y)
   for (let i = 1; i < roof.length; i++) {
-    const p = mapRoof(roof[i][0], roof[i][1])
+    const p = toCanvas(roof[i][0], roof[i][1])
     ctx.lineTo(p.x, p.y)
   }
   ctx.closePath()
@@ -167,16 +164,18 @@ watch(() => [props.loadGrid, props.roof, props.areaM2], () => draw(), { deep: tr
 .load-heatmap {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
   pointer-events: none;
 }
 canvas {
-  flex: 1;
+  display: block;
   width: 100%;
   height: 100%;
 }
 .legend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   gap: 8px;
