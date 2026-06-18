@@ -7,7 +7,6 @@ import (
 	"github.com/technonicol/snowbag/api/internal/model"
 )
 
-const sensorSpacingM = 18.0
 const sensorRangeM = 12.0
 
 func placeSensors(bags []model.Snowbag, roof [][]float64, areaM2 float64, overrides []model.Sensor) []model.Sensor {
@@ -17,41 +16,19 @@ func placeSensors(bags []model.Snowbag, roof [][]float64, areaM2 float64, overri
 	if len(bags) == 0 {
 		return fallbackSensors(roof)
 	}
-	mpp := metersPerPixel(roof, areaM2)
-	spacingPx := sensorSpacingM / mpp
 
 	var sensors []model.Sensor
 	n := 1
 	for _, bag := range bags {
-		areaPx := polygonArea(bag.Poly)
 		c := polygonCentroid(bag.Poly)
-		zone := bag.ID
-		z := zone
-		count := 1
-		if pxToM2(areaPx, mpp) > sensorSpacingM*sensorSpacingM*1.2 {
-			count = int(math.Ceil(math.Sqrt(pxToM2(areaPx, mpp)) / sensorSpacingM))
-			if count > 3 {
-				count = 3
-			}
-		}
-		for i := 0; i < count; i++ {
-			x, y := c.X, c.Y
-			if count > 1 {
-				offset := spacingPx * 0.35 * float64(i-count/2)
-				x += offset
-			}
-			sensors = append(sensors, model.Sensor{
-				ID:   fmt.Sprintf("Д-%02d", n),
-				X:    x,
-				Y:    y,
-				Zone: &z,
-			})
-			n++
-		}
-	}
-	if len(sensors) < 2 && len(bags) > 0 {
-		c := polygonCentroid(roof)
-		sensors = append(sensors, model.Sensor{ID: fmt.Sprintf("Д-%02d", n), X: c.X, Y: c.Y, Zone: nil})
+		z := bag.ID
+		sensors = append(sensors, model.Sensor{
+			ID:   fmt.Sprintf("Д-%02d", n),
+			X:    c.X,
+			Y:    c.Y,
+			Zone: &z,
+		})
+		n++
 	}
 	return sensors
 }

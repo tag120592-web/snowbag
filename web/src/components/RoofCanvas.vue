@@ -7,6 +7,7 @@ import {
   PX_PER_M,
   closedPolylineLengthPx,
   formatLengthM,
+  roofEdgeSegments,
   moveCircle,
   moveRect,
   moveVertex,
@@ -14,10 +15,13 @@ import {
   polylineLengthPx,
   rectDragWithOrthogonal,
   rectFromDrag,
+  rectSidePoints,
+  resizeBagPoly,
   resizeCircle,
   resizeRect,
   segmentLengthPx,
   svgPointFromEvent,
+  bagPolyBBox,
 } from '@/composables/useRoofDrawing'
 import type { GeometryData, CalculationData, Obstacle } from '@/types'
 import WindRose from '@/components/WindRose.vue'
@@ -39,6 +43,11 @@ const props = defineProps<{
   orthogonal?: boolean
   transparentBg?: boolean
   selectedBagId?: string | null
+  selectedSensorId?: string | null
+  highlightedSideIndex?: number | null
+  editableBags?: boolean
+  /** Let map underlay receive wheel/drag when true. */
+  pointerPassthrough?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -51,6 +60,9 @@ const emit = defineEmits<{
   drawCancel: []
   editClear: []
   sensorMove: [id: string, x: number, y: number]
+  sensorSelect: [id: string]
+  bagSelect: [id: string]
+  bagChange: [id: string, poly: number[][]]
 }>()
 
 const riskColors: Record<string, { fill: string; soft: string; line: string }> = {
@@ -61,6 +73,7 @@ const riskColors: Record<string, { fill: string; soft: string; line: string }> =
 
 const svgRef = ref<SVGSVGElement | null>(null)
 const sensorDragging = ref<string | null>(null)
+const bagDrag = ref<{ id: string; corner: number } | null>(null)
 
 type PolyDraw = { points: number[][] }
 type RectDraw = { start: [number, number]; current: [number, number] }
@@ -149,6 +162,16 @@ function onCanvasMove(e: MouseEvent) {
     return
   }
 
+  if (bagDrag.value) {
+    const bag = props.calculation?.snowbags?.find((b) => b.id === bagDrag.value!.id)
+    if (bag?.poly?.length) {
+      const p = svgPointFromEvent(svg, e)
+      const poly = resizeBagPoly(bag.poly, bagDrag.value.corner, p)
+      emit('bagChange', bagDrag.value.id, poly)
+    }
+    return
+  }
+
   let pt = svgPointFromEvent(svg, e)
   if (isDrawing.value && props.drawSession?.tool === 'polyline') {
     pt = snapDrawPoint(pt)
@@ -215,6 +238,7 @@ function handleEditDrag(pt: [number, number]) {
 
 function onCanvasUp() {
   sensorDragging.value = null
+  bagDrag.value = null
   editDrag.value = null
 
   if (rectDraft.value && props.drawSession?.tool === 'rect') {
@@ -408,8 +432,22 @@ function startCircleRadiusDrag(id: string, e: MouseEvent) {
 
 function onSensorDown(id: string, e: MouseEvent) {
   if (!props.editableSensors) return
+  e.stopPropagation()
+  emit('sensorSelect', id)
   sensorDragging.value = id
   e.preventDefault()
+}
+
+function startBagCornerDrag(id: string, corner: number, e: MouseEvent) {
+  if (!props.editableBags) return
+  e.stopPropagation()
+  e.preventDefault()
+  bagDrag.value = { id, corner }
+}
+
+function bagCornerPoints(poly: number[][]): number[][] {
+  const { x, y, w, h } = bagPolyBBox(poly)
+  return [[x, y], [x + w, y], [x, y + h], [x + w, y + h]]
 }
 
 const previewRect = computed(() => {
@@ -449,12 +487,8 @@ function segmentMidpoint(a: number[], b: number[]): [number, number] {
 }
 
 function roofSegmentLabels(points: number[][]) {
-  if (points.length < 2) return []
   const labels: Array<{ x: number; y: number; text: string }> = []
-  for (let i = 0; i < points.length; i += 1) {
-    const a = points[i]
-    const b = points[(i + 1) % points.length]
-    if (i === points.length - 1 && points.length < 3) break
+  for (const [a, b] of roofEdgeSegments(points)) {
     const [x, y] = segmentMidpoint(a, b)
     labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
   }
@@ -471,6 +505,15 @@ function openPolylineLabels(points: number[][]) {
     labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
   }
   return labels
+}
+
+function elementSegmentLabels(o: Obstacle) {
+  if (o.shape === 'rect' && o.w && o.h) return roofSegmentLabels(rectSidePoints(o))
+  if (o.shape === 'polyline' && o.points?.length) {
+    if (o.points.length >= 3) return roofSegmentLabels(o.points)
+    return openPolylineLabels(o.points)
+  }
+  return []
 }
 
 const displayWindRose = computed(() => {
@@ -491,7 +534,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
     :layers="layers"
   />
 
-  <div v-else class="wrap" :class="{ crosshair }">
+  <div v-else class="wrap" :class="{ crosshair, 'pointer-passthrough': pointerPassthrough, 'map-edit-mode': pointerPassthrough && isEditing }">
     <svg
       ref="svgRef"
       viewBox="0 0 1000 680"
@@ -564,8 +607,23 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             fill="#fff"
             stroke="var(--red-60)"
             stroke-width="2"
-            class="handle"
+            class="handle map-interactive"
             @mousedown="startVertexDrag('roof', i, $event)"
+          />
+        </template>
+        <template v-if="geometry.roof?.length && highlightedSideIndex != null">
+          <line
+            v-for="(seg, i) in roofEdgeSegments(geometry.roof)"
+            :key="`hl-${i}`"
+            :x1="seg[0][0]"
+            :y1="seg[0][1]"
+            :x2="seg[1][0]"
+            :y2="seg[1][1]"
+            stroke="var(--red-60)"
+            :stroke-width="highlightedSideIndex === i ? 10 : 0"
+            stroke-linecap="round"
+            stroke-opacity="0.75"
+            pointer-events="none"
           />
         </template>
         <text
@@ -599,7 +657,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             fill="#fff"
             stroke="var(--red-60)"
             stroke-width="2"
-            class="handle"
+            class="handle map-interactive"
             @mousedown="startVertexDrag('walkway', i, $event)"
           />
         </template>
@@ -647,6 +705,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               :stroke-width="selectedObstacleId === o.id ? 2.5 : 1.5"
               @mousedown="startCircleMove(o, $event)"
             />
+            <polygon
+              v-else-if="o.shape === 'polyline' && o.points && o.points.length >= 3"
+              :points="ptsStr(o.points)"
+              fill="none"
+              :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--orange-40)'"
+              :stroke-width="selectedObstacleId === o.id ? 3 : 2"
+            />
             <polyline
               v-else-if="o.shape === 'polyline' && o.points?.length"
               :points="ptsStr(o.points)"
@@ -664,12 +729,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
                 fill="#fff"
                 stroke="var(--red-60)"
                 stroke-width="2"
-                class="handle"
+                class="handle map-interactive"
                 @mousedown="startVertexDrag('polyline', i, $event, o.id)"
               />
             </template>
             <text
-              v-for="(lbl, i) in o.shape === 'polyline' ? openPolylineLabels(o.points ?? []) : []"
+              v-for="(lbl, i) in elementSegmentLabels(o)"
               :key="`pl-${o.id}-${i}`"
               :x="lbl.x"
               :y="lbl.y"
@@ -702,7 +767,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
                 fill="#fff"
                 stroke="var(--red-60)"
                 stroke-width="2"
-                class="handle"
+                class="handle map-interactive"
                 @mousedown="startCircleMove(o, $event)"
               />
               <circle
@@ -712,7 +777,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
                 fill="#fff"
                 stroke="var(--red-60)"
                 stroke-width="2"
-                class="handle"
+                class="handle map-interactive"
                 @mousedown="startCircleRadiusDrag(o.id, $event)"
               />
             </template>
@@ -802,8 +867,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
         <g
           v-for="bag in calculation.snowbags"
           :key="bag.id"
-          class="bag-zone"
-          :class="{ selected: selectedBagId === bag.id }"
+          class="bag-zone map-interactive"
+          :class="{ selected: selectedBagId === bag.id, selectable: editableBags }"
+          @mousedown.stop="editableBags && emit('bagSelect', bag.id)"
         >
           <polygon
             :points="ptsStr(bag.poly)"
@@ -821,6 +887,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             font-weight="800"
             :fill="riskColors[bag.risk]?.line ?? 'var(--red-60)'"
           >{{ bag.id }}</text>
+          <template v-if="selectedBagId === bag.id && editableBags && bag.poly?.length">
+            <rect
+              v-for="(p, i) in bagCornerPoints(bag.poly)"
+              :key="`bc-${bag.id}-${i}`"
+              :x="p[0] - 4.5"
+              :y="p[1] - 4.5"
+              width="9"
+              height="9"
+              fill="#fff"
+              stroke="var(--red-60)"
+              stroke-width="2"
+              class="handle corner map-interactive"
+              @mousedown.stop="startBagCornerDrag(bag.id, i, $event)"
+            />
+          </template>
         </g>
       </g>
 
@@ -828,22 +909,17 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
         <g
           v-for="s in calculation.sensors"
           :key="s.id"
-          :class="{ draggable: editable }"
+          class="map-interactive"
+          :class="{ draggable: editableSensors, selected: selectedSensorId === s.id }"
           @mousedown="onSensorDown(s.id, $event)"
         >
-          <circle :cx="s.x" :cy="s.y" r="14" fill="#fff" stroke="var(--red-60)" stroke-width="2" />
+          <circle :cx="s.x" :cy="s.y" r="14" fill="#fff" :stroke="selectedSensorId === s.id ? 'var(--red-65)' : 'var(--red-60)'" stroke-width="2" />
           <circle :cx="s.x" :cy="s.y" r="5" fill="var(--red-60)" />
           <text :x="s.x" :y="s.y - 18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--content-primary-a-enabled)">{{ s.id }}</text>
         </g>
       </g>
 
-      <g :transform="`rotate(${northDeg ?? 0} 920 80)`">
-        <circle cx="920" cy="80" r="24" fill="#fff" stroke="var(--border-secondary-enabled)" />
-        <polygon points="920,62 914,86 926,86" fill="var(--red-60)" />
-        <text x="920" y="58" text-anchor="middle" font-size="9" font-weight="800">С</text>
-      </g>
-
-      <foreignObject v-if="show.wind && displayWindRose?.length" x="24" y="24" width="150" height="150">
+      <foreignObject v-if="show.wind && displayWindRose?.length" x="850" y="10" width="150" height="150">
         <div xmlns="http://www.w3.org/1999/xhtml">
           <WindRose :data="displayWindRose" :north="northDeg" :size="140" />
         </div>
@@ -854,6 +930,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
 <style scoped>
 .wrap { width: 100%; height: 100%; display: flex; }
+.wrap.pointer-passthrough { pointer-events: none; }
+.wrap.pointer-passthrough.map-edit-mode :deep(.map-interactive) { pointer-events: auto; }
 .wrap.crosshair { cursor: crosshair; }
 .canvas { width: 100%; height: 100%; display: block; }
 .canvas--overlay { background: transparent; }

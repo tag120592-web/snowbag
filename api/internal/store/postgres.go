@@ -115,8 +115,8 @@ func (s *Store) CreateProject(ctx context.Context, req model.CreateProjectReques
 		          status, author, north_deg, snow_region, wind_region, geometry, climate, calculation,
 		          underlay_key, created_at, updated_at`,
 		id, req.Name, req.Address, req.City, req.Customer,
-		fmt.Sprintf("КИСО-%d", time.Now().Year()),
-		fmt.Sprintf("РС-%d-%04d", time.Now().Year(), time.Now().Unix()%10000),
+		"",
+		"",
 		"Инженер",
 		clim,
 	)

@@ -6,26 +6,27 @@ import (
 	"github.com/technonicol/snowbag/api/internal/model"
 )
 
+// snowLoad — нормативный вес снегового покрова Sg, кПа (СП 20.13330.2016, табл. 10.1).
 func snowLoad(region string) float64 {
 	switch region {
 	case "I":
-		return 0.8
+		return 0.5
 	case "II":
-		return 1.2
+		return 1.0
 	case "III":
-		return 1.8
+		return 1.5
 	case "IV":
-		return 2.4
+		return 2.0
 	case "V":
-		return 3.2
+		return 2.5
 	case "VI":
-		return 4.0
+		return 3.0
 	case "VII":
-		return 4.8
+		return 3.5
 	case "VIII":
-		return 5.6
+		return 4.0
 	default:
-		return 1.8
+		return 1.5
 	}
 }
 
