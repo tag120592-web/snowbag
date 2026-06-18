@@ -53,28 +53,31 @@ func EnsureThermalSchema(ctx context.Context, pool *pgxpool.Pool) error {
 		);
 		CREATE INDEX IF NOT EXISTS idx_thermal_calculations_project ON thermal_calculations(project_id);
 
-		INSERT INTO thermal_materials (ekn, name, lambda, source) VALUES
-			('demo-logicroof',  'Гидроизоляция LOGICROOF V-RP', 0.17,  'pim'),
-			('demo-xps-carbon', 'XPS ТЕХНОНИКОЛЬ CARBON PROF',  0.034, 'pim'),
-			('demo-tehnoruf',   'Минвата ТЕХНОРУФ Н30',         0.038, 'pim'),
-			('demo-parabarier', 'Пароизоляция ПАРАБАРЬЕР СА500', 0.17, 'pim'),
-			('demo-proflist',   'Профлист Н75 (основание)',     58.0,  'library')
-		ON CONFLICT (ekn) DO NOTHING;
-
-		INSERT INTO thermal_systems (ekn, slug, name, note) VALUES
-			('demo-sys-standart', 'tn-standart', 'ТН-КРОВЛЯ Стандарт', 'Механически закрепляемая, ПВХ-мембрана'),
-			('demo-sys-prof',     'tn-prof',     'ТН-КРОВЛЯ Проф',     ''),
-			('demo-sys-smart',    'tn-smart',    'ТН-КРОВЛЯ Смарт',    ''),
-			('demo-sys-balast',   'tn-balast',   'ТН-КРОВЛЯ Балласт',  '')
-		ON CONFLICT (ekn) DO NOTHING;
-
-		INSERT INTO thermal_system_layers (system_ekn, ord, material_ekn, role, default_thickness_mm, is_insulant) VALUES
-			('demo-sys-standart', 1, 'demo-logicroof',  'Гидроизоляция',              1.5, FALSE),
-			('demo-sys-standart', 2, 'demo-xps-carbon', 'Теплоизоляция',              150, TRUE),
-			('demo-sys-standart', 3, 'demo-tehnoruf',   'Теплоизоляция / разуклонка', 60,  TRUE),
-			('demo-sys-standart', 4, 'demo-parabarier', 'Пароизоляция',               0.5, FALSE),
-			('demo-sys-standart', 5, 'demo-proflist',   'Несущее основание',          0.8, FALSE)
-		ON CONFLICT (system_ekn, ord) DO NOTHING;
+		-- Демо-данные ставятся ТОЛЬКО если систем ещё нет (свежая база). После
+		-- синка с ПИМ (scripts/pim_sync.py) реальные системы остаются нетронутыми.
+		DO $seed$
+		BEGIN
+		IF NOT EXISTS (SELECT 1 FROM thermal_systems) THEN
+			INSERT INTO thermal_materials (ekn, name, lambda, source) VALUES
+				('demo-logicroof',  'Гидроизоляция LOGICROOF V-RP', 0.17,  'pim'),
+				('demo-xps-carbon', 'XPS ТЕХНОНИКОЛЬ CARBON PROF',  0.034, 'pim'),
+				('demo-tehnoruf',   'Минвата ТЕХНОРУФ Н30',         0.038, 'pim'),
+				('demo-parabarier', 'Пароизоляция ПАРАБАРЬЕР СА500', 0.17, 'pim'),
+				('demo-proflist',   'Профлист Н75 (основание)',     58.0,  'library')
+			ON CONFLICT (ekn) DO NOTHING;
+			INSERT INTO thermal_systems (ekn, slug, name, note) VALUES
+				('demo-sys-standart', 'tn-standart', 'ТН-КРОВЛЯ Стандарт', 'Механически закрепляемая, ПВХ-мембрана'),
+				('demo-sys-prof',     'tn-prof',     'ТН-КРОВЛЯ Проф',     ''),
+				('demo-sys-smart',    'tn-smart',    'ТН-КРОВЛЯ Смарт',    ''),
+				('demo-sys-balast',   'tn-balast',   'ТН-КРОВЛЯ Балласт',  '');
+			INSERT INTO thermal_system_layers (system_ekn, ord, material_ekn, role, default_thickness_mm, is_insulant) VALUES
+				('demo-sys-standart', 1, 'demo-logicroof',  'Гидроизоляция',              1.5, FALSE),
+				('demo-sys-standart', 2, 'demo-xps-carbon', 'Теплоизоляция',              150, TRUE),
+				('demo-sys-standart', 3, 'demo-tehnoruf',   'Теплоизоляция / разуклонка', 60,  TRUE),
+				('demo-sys-standart', 4, 'demo-parabarier', 'Пароизоляция',               0.5, FALSE),
+				('demo-sys-standart', 5, 'demo-proflist',   'Несущее основание',          0.8, FALSE);
+		END IF;
+		END $seed$;
 	`)
 	return err
 }

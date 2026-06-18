@@ -41,3 +41,18 @@
 
 ## Готовность к «боевому» режиму
 Когда придут токен + ЕКН + коды атрибутов: задаём `PIM_MODE=live`, `PIM_TOKEN`, заполняем `pim_systems` реальными ЕКН и коды в `attributes.go` — расчётная логика не меняется.
+
+---
+
+## ✅ Реализовано (живая синхронизация)
+- **Скрипт:** `scripts/pim_sync.py` — тянет 4 системы из ПИМ → состав (associations) →
+  материалы (λ/μ/ρ) → SQL для `thermal_systems / thermal_materials / thermal_system_layers`.
+- **Запуск:** `PIM_TOKEN=... python3 scripts/pim_sync.py | docker compose exec -T postgres psql -U snowbag -d snowbag`
+  (токен — из `.env`, см. `.env.example`).
+- **ЕКН систем:** Стандарт 10000008, Проф 10000025, Смарт 10000006, Балласт 10000013.
+- **Коды атрибутов материала:** λ — `atr_term_expl_b`/`atr_term_expl_a`/`thermal_d`;
+  μ — `vapor`; ρ — `atr_density`; толщина — `Thikness`; имя — `atr_name_for_website`.
+  Запрос с фильтром `?attributes=...` (5 МБ → ~12 КБ).
+- **Слои** распознаются динамически из `associations` (`syst_main_<роль>_<N>`), классификация по смыслу.
+- Демо-сидинг в `thermal_store.go` теперь ставится только на пустой базе (реальные данные не трогает).
+- **TODO(инженер):** выбор λА/λБ по зоне влажности; толщины слоёв (сейчас типовые, утеплитель — из ПИМ).
