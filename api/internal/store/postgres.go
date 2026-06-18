@@ -129,6 +129,8 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 		return nil, err
 	}
 	name, address, city, customer := cur.Name, cur.Address, cur.City, cur.Customer
+	number := cur.Number
+	calcNo := cur.CalcNo
 	lat, lon := cur.Lat, cur.Lon
 	areaM2, northDeg := cur.AreaM2, cur.NorthDeg
 	snowRegion, windRegion, status := cur.SnowRegion, cur.WindRegion, cur.Status
@@ -136,6 +138,12 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 
 	if req.Name != nil {
 		name = *req.Name
+	}
+	if req.Number != nil {
+		number = *req.Number
+	}
+	if req.CalcNo != nil {
+		calcNo = *req.CalcNo
 	}
 	if req.Address != nil {
 		address = *req.Address
@@ -179,14 +187,14 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 
 	row := s.pool.QueryRow(ctx, `
 		UPDATE projects SET
-			name = $2, address = $3, city = $4, customer = $5, area_m2 = $6,
-			north_deg = $7, snow_region = $8, wind_region = $9, status = $10,
-			geometry = $11, climate = $12, calculation = $13, lat = $14, lon = $15, updated_at = now()
+			name = $2, number = $3, calc_no = $4, address = $5, city = $6, customer = $7, area_m2 = $8,
+			north_deg = $9, snow_region = $10, wind_region = $11, status = $12,
+			geometry = $13, climate = $14, calculation = $15, lat = $16, lon = $17, updated_at = now()
 		WHERE id = $1
 		RETURNING id, name, number, calc_no, customer, address, city, lat, lon, area_m2, roof_type, parapet,
 		          status, author, north_deg, snow_region, wind_region, geometry, climate, calculation,
 		          underlay_key, created_at, updated_at`,
-		id, name, address, city, customer, areaM2, northDeg, snowRegion, windRegion, status,
+		id, name, number, calcNo, address, city, customer, areaM2, northDeg, snowRegion, windRegion, status,
 		geometry, climate, calculation, lat, lon,
 	)
 	return scanProject(row)

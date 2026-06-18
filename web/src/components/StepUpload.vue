@@ -20,13 +20,24 @@ export interface UploadedFileItem {
   page?: number
 }
 
+export interface CalcMetaFields {
+  name: string
+  city: string
+  number: string
+  calcNo: string
+  customer: string
+}
+
 const props = defineProps<{
   isFresh: boolean
   files: UploadedFileItem[]
   scale: string | null
+  calcMeta: CalcMetaFields
+  calcMetaReadonly?: boolean
   mapAddress: string
   mapLat?: number | null
   mapLon?: number | null
+  mapZoom?: number | null
   mapCity?: string
   mapSelected: boolean
   underlaySrc: string
@@ -40,8 +51,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   fileSelect: [file: File]
   mapSelect: [payload: MapSelectPayload]
+  mapViewportChange: [payload: { zoom: number; center: [number, number] }]
   pdfPageConfirm: [payload: { page: number; file: File }]
   pdfPickCancel: []
+  calcMetaUpdate: [payload: Partial<CalcMetaFields>]
 }>()
 
 const tab = ref<'file' | 'map'>('file')
@@ -328,13 +341,66 @@ function onImageError() {
           :address="mapAddress"
           :lat="mapLat"
           :lon="mapLon"
+          :zoom="mapZoom"
           :city="mapCity"
           @select="onMapSelect"
+          @viewport-change="emit('mapViewportChange', $event)"
         />
       </template>
     </div>
 
     <aside class="upload-panel">
+      <h3 class="panel-title">О расчёте</h3>
+      <div class="calc-meta">
+        <label class="field">
+          <span>Объект</span>
+          <input
+            :value="calcMeta.name"
+            placeholder="ЛК «Север-2»"
+            :disabled="calcMetaReadonly"
+            @change="emit('calcMetaUpdate', { name: ($event.target as HTMLInputElement).value.trim() })"
+          />
+        </label>
+        <label class="field">
+          <span>Населённый пункт</span>
+          <input
+            :value="calcMeta.city"
+            placeholder="Екатеринбург"
+            :disabled="calcMetaReadonly"
+            @change="emit('calcMetaUpdate', { city: ($event.target as HTMLInputElement).value.trim() })"
+          />
+        </label>
+        <label class="field">
+          <span>№ объекта (КИСО)</span>
+          <input
+            :value="calcMeta.number"
+            class="mono"
+            placeholder="КИСО-2024-0185"
+            :disabled="calcMetaReadonly"
+            @change="emit('calcMetaUpdate', { number: ($event.target as HTMLInputElement).value.trim() })"
+          />
+        </label>
+        <label class="field">
+          <span>Номер расчёта</span>
+          <input
+            :value="calcMeta.calcNo"
+            class="mono"
+            placeholder="РС-2025-0001"
+            :disabled="calcMetaReadonly"
+            @change="emit('calcMetaUpdate', { calcNo: ($event.target as HTMLInputElement).value.trim() })"
+          />
+        </label>
+        <label class="field">
+          <span>Заказчик расчёта</span>
+          <input
+            :value="calcMeta.customer"
+            placeholder="ООО «Северная логистика»"
+            :disabled="calcMetaReadonly"
+            @change="emit('calcMetaUpdate', { customer: ($event.target as HTMLInputElement).value.trim() })"
+          />
+        </label>
+      </div>
+
       <template v-if="tab === 'file'">
         <template v-if="isPdfPicking">
           <h3 class="panel-title">Выберите лист</h3>
@@ -397,9 +463,6 @@ function onImageError() {
             </ul>
           </template>
 
-          <div v-if="scale" class="info-box">
-            Масштаб распознан по штампу чертежа: <strong>{{ scale }}</strong>. При необходимости задайте вручную по известному размеру.
-          </div>
         </template>
       </template>
 
@@ -517,11 +580,12 @@ function onImageError() {
 .file-item.selected { border-color: var(--red-60); background: var(--red-10); }
 .file-name { display: block; font-size: 13px; font-weight: 600; }
 .file-meta { font-size: 12px; color: var(--content-tertiary-enabled); }
-.info-box {
-  margin: 12px 20px 0; padding: 14px 16px; background: var(--blue-10); border-radius: var(--radius-md);
-  font-size: 12.5px; color: var(--blue-65); line-height: 1.45;
-}
+.calc-meta { margin-bottom: 4px; }
 .field { display: block; margin: 0 20px 12px; }
+.field input.mono { font-family: var(--font-family-mono); }
+.field input:read-only:not(:disabled) {
+  background: var(--neutral-10); color: var(--content-secondary-enabled); cursor: default;
+}
 .field span { display: block; font-size: 12.5px; font-weight: 600; color: var(--content-secondary-enabled); margin-bottom: 6px; }
 .field input {
   width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--border-secondary-enabled);

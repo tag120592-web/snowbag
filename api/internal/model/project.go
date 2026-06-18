@@ -83,6 +83,8 @@ type CreateProjectRequest struct {
 
 type UpdateProjectRequest struct {
 	Name       *string          `json:"name,omitempty"`
+	Number     *string          `json:"number,omitempty"`
+	CalcNo     *string          `json:"calcNo,omitempty"`
 	Address    *string          `json:"address,omitempty"`
 	City       *string          `json:"city,omitempty"`
 	Lat        *float64         `json:"lat,omitempty"`

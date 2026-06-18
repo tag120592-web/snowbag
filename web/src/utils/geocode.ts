@@ -35,7 +35,8 @@ async function geocodeViaApi(query: string, cityHint: string): Promise<GeocodeRe
     const res = await fetch(`${base}/api/v1/geocode?${params}`)
     if (!res.ok) return null
     const data = await res.json() as GeocodeResult
-    return { ...data, address: data.address || query }
+    const label = data.label?.trim()
+    return { ...data, address: label || data.address || query }
   } catch {
     return null
   }
