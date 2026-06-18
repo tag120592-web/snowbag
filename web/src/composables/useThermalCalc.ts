@@ -132,6 +132,11 @@ async function runCalc() {
   }
 }
 
+// Пересчёт при смене системы — чтобы состав и разрез на шаге «состав» обновлялись сразу.
+watch(systemEkn, () => {
+  if (projectId.value) void runCalc()
+})
+
 export function useThermalCalc() {
   return {
     // состояние
