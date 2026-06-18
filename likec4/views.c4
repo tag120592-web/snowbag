@@ -1,0 +1,153 @@
+views {
+  view index {
+    title 'C1 — Контекст системы'
+    description 'Пользователи и внешние системы вокруг SaaS «Снеговые мешки».'
+    include
+      engineer,
+      partner,
+      snowbag,
+      yandexMaps,
+      corporateSSO,
+      climateRef
+
+    style engineer, partner {
+      color green
+    }
+    style snowbag {
+      color primary
+    }
+    style yandexMaps, corporateSSO, climateRef {
+      color muted
+    }
+  }
+
+  view contextFull {
+    title 'C1 — Полный контекст (с post-MVP)'
+    include
+      *,
+      buildingOwner,
+      crm
+
+    style buildingOwner, crm {
+      color secondary
+    }
+  }
+
+  view containers of snowbag {
+    title 'C2 — Контейнеры'
+    description '''
+      Основные технические блоки MVP:
+      Vue 3 frontend, Go API, воркер, PostGIS, Redis, S3.
+    '''
+    include
+      *,
+      engineer -> snowbag.*,
+      partner -> snowbag.*
+
+    style snowbag.webApp {
+      color blue
+    }
+    style snowbag.api {
+      color primary
+    }
+    style snowbag.worker {
+      color amber
+    }
+    style snowbag.postgis {
+      color green
+    }
+    style snowbag.objectStorage {
+      color secondary
+    }
+  }
+
+  view backend of snowbag.api {
+    title 'C3 — Компоненты API-сервера'
+    description 'Go backend: геометрия, аналитика, экспорт, интеграции.'
+    include
+      *,
+      snowbag.api.climateService -> climateRef
+
+    style snowbag.api.geoEngine {
+      color blue
+    }
+    style snowbag.api.analyticsEngine {
+      color amber
+    }
+    style snowbag.api.exportService {
+      color green
+    }
+  }
+
+  view frontend of snowbag.webApp {
+    title 'C3 — Компоненты Web-приложения'
+    description 'Vue 3: загрузка, редактор, визуализация, карты, экспорт.'
+    include
+      *,
+      snowbag.webApp -> snowbag.api,
+      snowbag.webApp.mapsWidget -> yandexMaps
+  }
+
+  view worker of snowbag.worker {
+    title 'C3 — Воркер обработки файлов'
+    description 'Асинхронный пайплайн: DXF/DWG, CV для растров и PDF.'
+    include
+      *,
+      snowbag.api -> snowbag.worker,
+      snowbag.worker -> snowbag.objectStorage,
+      snowbag.worker -> snowbag.postgis
+  }
+
+  view mvpFlow {
+    title 'Поток MVP — от чертежа до экспорта'
+    description '''
+      1. Загрузка чертежа или адрес на карте
+      2. Авто/ручная геометрия кровли
+      3. Расчёт снеговых мешков и датчиков
+      4. PDF / Excel / JSON
+    '''
+    include
+      engineer,
+      snowbag.webApp,
+      snowbag.webApp.fileUpload,
+      snowbag.webApp.roofEditor,
+      snowbag.webApp.schemeViewer,
+      snowbag.webApp.exportUI,
+      snowbag.api,
+      snowbag.api.geoEngine,
+      snowbag.api.analyticsEngine,
+      snowbag.api.exportService,
+      snowbag.worker,
+      snowbag.postgis,
+      snowbag.objectStorage,
+      yandexMaps,
+      climateRef,
+      engineer -> snowbag.webApp,
+      snowbag.webApp -> snowbag.api,
+      snowbag.api -> snowbag.worker,
+      snowbag.api -> snowbag.postgis,
+      snowbag.api -> snowbag.objectStorage,
+      snowbag.api.analyticsEngine -> climateRef
+  }
+
+  view deployment {
+    title 'Развёртывание (production)'
+    description '''
+      Целевая инфраструктура: managed PostgreSQL, S3,
+      Redis, reverse proxy, мониторинг (Prometheus/Grafana).
+    '''
+    include
+      engineer,
+      partner,
+      snowbag,
+      yandexMaps,
+      corporateSSO,
+      climateRef,
+      snowbag.webApp,
+      snowbag.api,
+      snowbag.worker,
+      snowbag.postgis,
+      snowbag.redis,
+      snowbag.objectStorage
+  }
+}

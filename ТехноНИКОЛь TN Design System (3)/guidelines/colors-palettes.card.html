@@ -1,0 +1,25 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Extended palettes" subtitle="Blue / green / yellow / orange / purple — for tags & data" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .row { display: grid; grid-template-columns: 64px repeat(7, 1fr); align-items: center; gap: 0; }
+  .name { font-size: 12px; font-weight: 600; color: var(--neutral-70); }
+  .row span.s { height: 26px; }
+  .row:first-of-type span.s:first-of-type { border-top-left-radius: var(--radius-sm); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row"><span class="name">Blue</span><span class="s" style="background:var(--blue-10)"></span><span class="s" style="background:var(--blue-20)"></span><span class="s" style="background:var(--blue-35)"></span><span class="s" style="background:var(--blue-50)"></span><span class="s" style="background:var(--blue-60)"></span><span class="s" style="background:var(--blue-75)"></span><span class="s" style="background:var(--blue-90)"></span></div>
+    <div class="row"><span class="name">Green</span><span class="s" style="background:var(--green-10)"></span><span class="s" style="background:var(--green-20)"></span><span class="s" style="background:var(--green-35)"></span><span class="s" style="background:var(--green-50)"></span><span class="s" style="background:var(--green-65)"></span><span class="s" style="background:var(--green-80)"></span><span class="s" style="background:var(--green-95)"></span></div>
+    <div class="row"><span class="name">Yellow</span><span class="s" style="background:var(--yellow-10)"></span><span class="s" style="background:var(--yellow-15)"></span><span class="s" style="background:var(--yellow-25)"></span><span class="s" style="background:var(--yellow-40)"></span><span class="s" style="background:var(--yellow-55)"></span><span class="s" style="background:var(--yellow-70)"></span><span class="s" style="background:var(--yellow-90)"></span></div>
+    <div class="row"><span class="name">Orange</span><span class="s" style="background:var(--orange-10)"></span><span class="s" style="background:var(--orange-20)"></span><span class="s" style="background:var(--orange-35)"></span><span class="s" style="background:var(--orange-45)"></span><span class="s" style="background:var(--orange-60)"></span><span class="s" style="background:var(--orange-75)"></span><span class="s" style="background:var(--orange-90)"></span></div>
+    <div class="row"><span class="name">Purple</span><span class="s" style="background:var(--purple-10)"></span><span class="s" style="background:var(--purple-20)"></span><span class="s" style="background:var(--purple-35)"></span><span class="s" style="background:var(--purple-50)"></span><span class="s" style="background:var(--purple-65)"></span><span class="s" style="background:var(--purple-80)"></span><span class="s" style="background:var(--purple-95)"></span></div>
+  </div>
+</body>
+</html>

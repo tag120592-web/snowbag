@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Снеговые мешки · ТехноНИКОЛь</title>
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/arrow-left.svg" data-resource-id="ic_arrow_left" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/bell.svg" data-resource-id="ic_bell" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/box.svg" data-resource-id="ic_box" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/boxes.svg" data-resource-id="ic_boxes" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/braces.svg" data-resource-id="ic_braces" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/building-2.svg" data-resource-id="ic_building_2" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/check.svg" data-resource-id="ic_check" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/chevron-down.svg" data-resource-id="ic_chevron_down" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/chevron-left.svg" data-resource-id="ic_chevron_left" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/chevron-right.svg" data-resource-id="ic_chevron_right" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/chevron-up.svg" data-resource-id="ic_chevron_up" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/circle.svg" data-resource-id="ic_circle" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/circle-check.svg" data-resource-id="ic_circle_check" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/circle-help.svg" data-resource-id="ic_circle_help" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/compass.svg" data-resource-id="ic_compass" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/download.svg" data-resource-id="ic_download" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/ellipsis-vertical.svg" data-resource-id="ic_ellipsis_vertical" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/file-check-2.svg" data-resource-id="ic_file_check_2" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/file-text.svg" data-resource-id="ic_file_text" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/folder.svg" data-resource-id="ic_folder" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/folder-open.svg" data-resource-id="ic_folder_open" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/frame.svg" data-resource-id="ic_frame" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/gauge.svg" data-resource-id="ic_gauge" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/inbox.svg" data-resource-id="ic_inbox" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/info.svg" data-resource-id="ic_info" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/layout-dashboard.svg" data-resource-id="ic_layout_dashboard" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/loader-circle.svg" data-resource-id="ic_loader_circle" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/map.svg" data-resource-id="ic_map" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/map-pin.svg" data-resource-id="ic_map_pin" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/minus.svg" data-resource-id="ic_minus" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/move.svg" data-resource-id="ic_move" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/move-diagonal.svg" data-resource-id="ic_move_diagonal" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/pen-line.svg" data-resource-id="ic_pen_line" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/plus.svg" data-resource-id="ic_plus" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/radio.svg" data-resource-id="ic_radio" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/rotate-cw.svg" data-resource-id="ic_rotate_cw" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/ruler.svg" data-resource-id="ic_ruler" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/save.svg" data-resource-id="ic_save" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/scan-line.svg" data-resource-id="ic_scan_line" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/search.svg" data-resource-id="ic_search" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/share-2.svg" data-resource-id="ic_share_2" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/sheet.svg" data-resource-id="ic_sheet" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/snowflake.svg" data-resource-id="ic_snowflake" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/sparkles.svg" data-resource-id="ic_sparkles" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/spline.svg" data-resource-id="ic_spline" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/square-dashed.svg" data-resource-id="ic_square_dashed" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/timer.svg" data-resource-id="ic_timer" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/upload.svg" data-resource-id="ic_upload" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/wind.svg" data-resource-id="ic_wind" />
+<meta name="ext-resource-dependency" content="https://cdn.jsdelivr.net/npm/lucide-static@0.460.0/icons/x.svg" data-resource-id="ic_x" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: var(--font-family-base); background: var(--neutral-10); color: var(--content-primary-a-enabled); }
+  #root { height: 100%; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--neutral-25); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--neutral-35); background-clip: content-box; }
+</style>
+<template id="__bundler_thumbnail" data-bg-color="#e11b11">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#e11b11"/>
+    <g fill="none" stroke="#ffffff" stroke-width="34" stroke-linecap="round">
+      <line x1="600" y1="250" x2="600" y2="550"/>
+      <line x1="470" y1="325" x2="730" y2="475"/>
+      <line x1="470" y1="475" x2="730" y2="325"/>
+      <line x1="600" y1="250" x2="560" y2="300"/><line x1="600" y1="250" x2="640" y2="300"/>
+      <line x1="600" y1="550" x2="560" y2="500"/><line x1="600" y1="550" x2="640" y2="500"/>
+    </g>
+  </svg>
+</template>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script>
+// «Снеговые мешки» — демоданные прототипа.
+// Геометрия задана в системе координат SVG viewBox 1000 × 680 (план кровли сверху).
+window.SNOW_DATA = (function () {
+  // ---------- Объект / проект ----------
+  const PROJECT = {
+    name: "ЛК «Север-2»",
+    type: "Логистический комплекс, складской корпус",
+    address: "г. Екатеринбург, Сибирский тракт, 12",
+    customer: "ООО «Северная логистика»",
+    area: "8 240",            // м²
+    roofType: "Плоская, рулонная (ПВХ-мембрана)",
+    parapet: "600 мм",
+    norm: "СП 20.13330.2016 (изм. № 6)",
+    updated: "Сегодня, 14:32",
+    author: "Громов А. И.",
+  };
+
+  // ---------- Контур кровли (внешний) ----------
+  // L-образная кровля: верхний прямоугольник + крыло вниз-влево.
+  const ROOF = [
+    [90, 90], [910, 90], [910, 440], [560, 440], [560, 590], [90, 590],
+  ];
+
+  // ---------- Препятствия ----------
+  const OBSTACLES = [
+    { id: "shaft-1", type: "Лестнично-лифтовая надстройка", short: "Надстройка", shape: "rect", x: 690, y: 150, w: 150, h: 110, hM: 3.6, size: "23,0 × 16,8 м" },
+    { id: "vent-1", type: "Вентиляционная установка", short: "Вентустановка", shape: "rect", x: 360, y: 150, w: 130, h: 74, hM: 2.4, size: "19,7 × 11,2 м" },
+    { id: "unit-1", type: "Технический блок (ИТП)", short: "Техблок", shape: "rect", x: 640, y: 312, w: 96, h: 62, hM: 1.8, size: "14,5 × 9,4 м" },
+    { id: "sky-1", type: "Зенитный фонарь", short: "Фонарь", shape: "rect", x: 160, y: 300, w: 240, h: 60, hM: 0.9, size: "36,4 × 9,1 м" },
+    { id: "drain-1", type: "Водосточная воронка", short: "Воронка", shape: "circle", cx: 150, cy: 560, r: 9 },
+    { id: "drain-2", type: "Водосточная воронка", short: "Воронка", shape: "circle", cx: 470, cy: 560, r: 9 },
+    { id: "drain-3", type: "Водосточная воронка", short: "Воронка", shape: "circle", cx: 760, cy: 160, r: 9 },
+    { id: "drain-4", type: "Водосточная воронка", short: "Воронка", shape: "circle", cx: 880, cy: 410, r: 9 },
+    { id: "drain-5", type: "Водосточная воронка", short: "Воронка", shape: "circle", cx: 300, cy: 150, r: 9 },
+  ];
+
+  // Пешеходная дорожка обслуживания (маршрут вдоль оси)
+  const WALKWAY = [[120, 430], [520, 430], [520, 560]];
+
+  // ---------- Снеговые мешки ----------
+  // risk: critical | high | medium  → red / orange / yellow (по семантике TN)
+  const SNOWBAGS = [
+    { id: "Z1", name: "Входящий угол", basis: "Геометрия: вогнутый угол кровли", poly: [[470, 440], [560, 440], [560, 545], [470, 545]], mu: 3.2, load: "4,03", area: 210, risk: "critical" },
+    { id: "Z2", name: "За надстройкой", basis: "Подветренная зона за надстройкой 3,6 м", poly: [[690, 260], [840, 260], [840, 332], [690, 332]], mu: 2.6, load: "3,28", area: 180, risk: "critical" },
+    { id: "Z3", name: "За вентустановкой", basis: "Подветренная зона за установкой 2,4 м", poly: [[360, 224], [490, 224], [490, 292], [360, 292]], mu: 2.2, load: "2,77", area: 145, risk: "high" },
+    { id: "Z4", name: "Подветренный парапет (юг)", basis: "Снос снега к парапету, μ по п. 10.4", poly: [[100, 538], [552, 538], [552, 582], [100, 582]], mu: 1.8, load: "2,27", area: 320, risk: "high" },
+    { id: "Z5", name: "За зенитным фонарём", basis: "Подветренная зона за фонарём", poly: [[160, 362], [400, 362], [400, 408], [160, 408]], mu: 1.6, load: "2,02", area: 165, risk: "medium" },
+    { id: "Z6", name: "Парапет (запад)", basis: "Снос снега к западному парапету", poly: [[100, 100], [148, 100], [148, 520], [100, 520]], mu: 1.4, load: "1,76", area: 160, risk: "medium" },
+  ];
+
+  // ---------- Датчики снеговой нагрузки ----------
+  // Привязка к зоне; координаты в системе плана.
+  const SENSORS = [
+    { id: "Д-01", x: 512, y: 492, zone: "Z1" },
+    { id: "Д-02", x: 498, y: 458, zone: "Z1" },
+    { id: "Д-03", x: 762, y: 296, zone: "Z2" },
+    { id: "Д-04", x: 812, y: 300, zone: "Z2" },
+    { id: "Д-05", x: 410, y: 256, zone: "Z3" },
+    { id: "Д-06", x: 452, y: 276, zone: "Z3" },
+    { id: "Д-07", x: 205, y: 560, zone: "Z4" },
+    { id: "Д-08", x: 330, y: 560, zone: "Z4" },
+    { id: "Д-09", x: 458, y: 560, zone: "Z4" },
+    { id: "Д-10", x: 222, y: 386, zone: "Z5" },
+    { id: "Д-11", x: 342, y: 386, zone: "Z5" },
+    { id: "Д-12", x: 124, y: 210, zone: "Z6" },
+    { id: "Д-13", x: 124, y: 392, zone: "Z6" },
+    { id: "Д-14", x: 878, y: 300, zone: null },
+  ];
+
+  // ---------- Климат / привязка ----------
+  const CLIMATE = {
+    city: "Екатеринбург",
+    snowRegion: "III",
+    sg: "1,8",            // кПа, расчётный вес снегового покрова
+    sgKg: "184",          // кг/м²
+    windRegion: "II",
+    w0: "0,30",           // кПа
+    terrain: "B",
+    norm: "СП 20.13330.2016 (изм. № 6)",
+    northDeg: -18,        // поворот севера относительно вертикали, по часовой
+  };
+
+  // Роза ветров (повторяемость, %), 8 румбов от С по часовой
+  const WINDROSE = [
+    { dir: "С", deg: 0, v: 8 },
+    { dir: "СВ", deg: 45, v: 7 },
+    { dir: "В", deg: 90, v: 9 },
+    { dir: "ЮВ", deg: 135, v: 11 },
+    { dir: "Ю", deg: 180, v: 13 },
+    { dir: "ЮЗ", deg: 225, v: 19 },
+    { dir: "З", deg: 270, v: 21 },
+    { dir: "СЗ", deg: 315, v: 12 },
+  ];
+
+  // ---------- Итоговые метрики ----------
+  const METRICS = {
+    roofArea: "8 240",
+    bagsArea: "1 180",
+    bagsShare: "14,3",
+    sensors: 14,
+    coverage: "96",
+    maxLoad: "4,03",
+    risk: { critical: 2, high: 2, medium: 2 },
+  };
+
+  // Спецификация оборудования
+  const SPEC = [
+    { pos: 1, name: "Датчик снеговой нагрузки ТН-СНЕГ-200", unit: "шт.", qty: 14, note: "Тензометрический, IP67" },
+    { pos: 2, name: "Базовая станция сбора данных ТН-ХАБ-С", unit: "шт.", qty: 1, note: "LoRaWAN, 4G" },
+    { pos: 3, name: "Кронштейн монтажный КМ-С", unit: "шт.", qty: 14, note: "Нерж. сталь" },
+    { pos: 4, name: "Кабель сигнальный, экранированный", unit: "м", qty: 320, note: "—" },
+  ];
+
+  // ---------- Недавние проекты (дашборд) ----------
+  const PROJECTS = [
+    { name: "ЛК «Север-2»", city: "Екатеринбург", area: "8 240", sensors: 14, status: "В работе", tone: "blue", updated: "Сегодня, 14:32", current: true },
+    { name: "ТРЦ «Гранат»", city: "Казань", area: "22 100", sensors: 31, status: "Готов", tone: "green", updated: "Вчера, 18:05" },
+    { name: "Склад № 7 · Уралхим", city: "Пермь", area: "5 600", sensors: 9, status: "Готов", tone: "green", updated: "13 июня, 11:20" },
+    { name: "Производственный корпус А", city: "Челябинск", area: "11 480", sensors: 0, status: "Черновик", tone: "neutral", updated: "11 июня, 09:48" },
+    { name: "Логопарк «Восточный»", city: "Тюмень", area: "16 900", sensors: 24, status: "Пилот", tone: "orange", updated: "9 июня, 16:12" },
+  ];
+
+  // Шаги мастера
+  const STEPS = [
+    { id: "upload", n: 1, label: "Загрузка данных", icon: "upload" },
+    { id: "geometry", n: 2, label: "Геометрия кровли", icon: "scan-line" },
+    { id: "obstacles", n: 3, label: "Препятствия", icon: "boxes" },
+    { id: "climate", n: 4, label: "Ориентация и климат", icon: "compass" },
+    { id: "snowbags", n: 5, label: "Снеговые мешки", icon: "snowflake" },
+    { id: "sensors", n: 6, label: "Датчики", icon: "radio" },
+    { id: "result", n: 7, label: "Результат", icon: "file-check-2" },
+  ];
+
+  return { PROJECT, ROOF, OBSTACLES, WALKWAY, SNOWBAGS, SENSORS, CLIMATE, WINDROSE, METRICS, SPEC, PROJECTS, STEPS };
+})();
+
+window.__lazyTN = (function () { var cache = {}; return function (name) { if (!cache[name]) { var f = function (props) { var C = (window.TNDesignSystem_7f9df2 || {})[name]; return C ? React.createElement(C, props) : null; }; f.displayName = "TN_" + name; cache[name] = f; } return cache[name]; }; })();
+window.__lazyNS = function () { return new Proxy({}, { get: function (_t, k) { return window.__lazyTN(k); } }); };
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+//==== RoofCanvas.jsx ====
+// «Снеговые мешки» — центральный SVG-план кровли с послойным раскрытием.
+// Слои управляются пропом layers; послойно используется на шагах 2–7.
+const SnowIcon = window.__lazyTN("Icon");
+
+const RISK_META = {
+  critical: { fill: "var(--red-60)", soft: "var(--red-10)", line: "var(--red-65)", label: "Критическая", tone: "red" },
+  high: { fill: "var(--orange-40)", soft: "var(--orange-10)", line: "var(--orange-50)", label: "Высокая", tone: "orange" },
+  medium: { fill: "var(--yellow-30)", soft: "var(--yellow-10)", line: "var(--yellow-40)", label: "Средняя", tone: "yellow" },
+};
+
+function ptsStr(pts) { return pts.map((p) => p.join(",")).join(" "); }
+function centroid(pts) {
+  const n = pts.length;
+  return [pts.reduce((a, p) => a + p[0], 0) / n, pts.reduce((a, p) => a + p[1], 0) / n];
+}
+function shrink(pts, t) {
+  const c = centroid(pts);
+  return pts.map((p) => [c[0] + (p[0] - c[0]) * (1 - t), c[1] + (p[1] - c[1]) * (1 - t)]);
+}
+
+// ---------- Роза ветров ----------
+function WindRose({ size = 150, data = window.SNOW_DATA.WINDROSE, north = 0 }) {
+  const cx = size / 2, cy = size / 2, R = size / 2 - 18;
+  const max = Math.max(...data.map((d) => d.v));
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+      <g transform={`rotate(${north} ${cx} ${cy})`}>
+        {[0.5, 1].map((f, i) => (
+          <circle key={i} cx={cx} cy={cy} r={R * f} fill="none" stroke="var(--neutral-20)" strokeWidth="1" strokeDasharray={i === 0 ? "3 3" : "0"} />
+        ))}
+        {data.map((d) => {
+          const rad = (d.deg - 90) * Math.PI / 180;
+          const len = (d.v / max) * R;
+          const x = cx + Math.cos(rad) * len, y = cy + Math.sin(rad) * len;
+          const w = 7;
+          const px = cx + Math.cos(rad + Math.PI / 2) * w, py = cy + Math.sin(rad + Math.PI / 2) * w;
+          const qx = cx + Math.cos(rad - Math.PI / 2) * w, qy = cy + Math.sin(rad - Math.PI / 2) * w;
+          const strong = d.v === max;
+          return <polygon key={d.dir} points={`${cx},${cy} ${px},${py} ${x},${y} ${qx},${qy}`}
+            fill={strong ? "var(--red-60)" : "var(--blue-40)"} fillOpacity={strong ? 0.9 : 0.55} />;
+        })}
+      </g>
+      {/* стороны света — без поворота, подписи фиксированы к географии */}
+      {[["С", 0], ["В", 90], ["Ю", 180], ["З", 270]].map(([lab, deg]) => {
+        const rad = (deg - 90 + north) * Math.PI / 180;
+        const r = R + 11;
+        return <text key={lab} x={cx + Math.cos(rad) * r} y={cy + Math.sin(rad) * r + 4}
+          textAnchor="middle" fontSize="11" fontWeight={lab === "С" ? 800 : 600}
+          fill={lab === "С" ? "var(--red-60)" : "var(--content-tertiary-enabled)"}>{lab}</text>;
+      })}
+    </svg>
+  );
+}
+
+// ---------- Компас (стрелка севера) ----------
+function NorthArrow({ size = 56, deg = 0 }) {
+  const c = size / 2;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+      <circle cx={c} cy={c} r={c - 2} fill="#fff" stroke="var(--border-secondary-enabled)" strokeWidth="1" />
+      <g transform={`rotate(${deg} ${c} ${c})`}>
+        <polygon points={`${c},${c - (c - 9)} ${c - 6},${c + 4} ${c + 6},${c + 4}`} fill="var(--red-60)" />
+        <polygon points={`${c},${c + (c - 12)} ${c - 5},${c + 2} ${c + 5},${c + 2}`} fill="var(--neutral-35)" />
+      </g>
+      <text x={c} y="13" textAnchor="middle" fontSize="9" fontWeight="800" fill="var(--content-primary-a-enabled)">С</text>
+    </svg>
+  );
+}
+
+// ---------- План кровли ----------
+function RoofCanvas({ layers = {}, selectedId = null, onSelect, view3d = false, height = "100%" }) {
+  const D = window.SNOW_DATA;
+  const L = { geometry: true, parapet: true, walkway: false, obstacles: false, bags: false, sensors: false, dims: false, north: false, wind: false, ...layers };
+  const sel = (id) => onSelect && onSelect(id);
+
+  return (
+    <div style={{ width: "100%", height, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", perspective: view3d ? "1500px" : "none" }}>
+      <svg viewBox="0 0 1000 680" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
+        style={{
+          maxHeight: "100%", transition: "transform .45s ease",
+          transform: view3d ? "rotateX(56deg) rotateZ(-20deg) scale(.92)" : "none",
+          transformOrigin: "center 62%",
+          filter: view3d ? "drop-shadow(0 40px 30px rgba(20,24,38,.22))" : "none",
+        }}>
+        <defs>
+          <pattern id="snowGrid" width="34" height="34" patternUnits="userSpaceOnUse">
+            <path d="M34 0H0V34" fill="none" stroke="var(--neutral-15)" strokeWidth="1" />
+          </pattern>
+        </defs>
+
+        {/* фон-сетка */}
+        <rect x="0" y="0" width="1000" height="680" fill="var(--neutral-10)" />
+
+        {/* ---------- Контур кровли ---------- */}
+        {L.geometry && (
+          <g>
+            <polygon points={ptsStr(D.ROOF)} fill="#ffffff" />
+            <polygon points={ptsStr(D.ROOF)} fill="url(#snowGrid)" />
+            <polygon points={ptsStr(D.ROOF)} fill="none" stroke="var(--content-primary-a-enabled)" strokeWidth="2.5" strokeLinejoin="round" />
+            {L.parapet && (
+              <polygon points={ptsStr(D.ROOF)} fill="none" stroke="var(--neutral-45)" strokeWidth="7" strokeOpacity="0.35" strokeLinejoin="round" />
+            )}
+          </g>
+        )}
+
+        {/* ---------- Снеговые мешки (тепловая карта) ---------- */}
+        {L.bags && D.SNOWBAGS.map((z) => {
+          const m = RISK_META[z.risk];
+          const on = selectedId === z.id;
+          return (
+            <g key={z.id} style={{ cursor: onSelect ? "pointer" : "default" }} onClick={() => sel(z.id)}>
+              <polygon points={ptsStr(z.poly)} fill={m.fill} fillOpacity="0.16" />
+              <polygon points={ptsStr(shrink(z.poly, 0.32))} fill={m.fill} fillOpacity="0.26" />
+              <polygon points={ptsStr(shrink(z.poly, 0.62))} fill={m.fill} fillOpacity="0.4" />
+              <polygon points={ptsStr(z.poly)} fill="none" stroke={m.line}
+                strokeWidth={on ? 3 : 1.5} strokeDasharray="5 4" />
+              {!view3d && (
+                <text x={centroid(z.poly)[0]} y={centroid(z.poly)[1] + 4} textAnchor="middle"
+                  fontSize="13" fontWeight="800" fill={m.line}>{z.id}</text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* ---------- Пешеходная дорожка ---------- */}
+        {L.walkway && (
+          <polyline points={ptsStr(D.WALKWAY)} fill="none" stroke="var(--blue-40)"
+            strokeWidth="6" strokeDasharray="2 8" strokeLinecap="round" strokeOpacity="0.7" />
+        )}
+
+        {/* ---------- Препятствия ---------- */}
+        {L.obstacles && D.OBSTACLES.map((o) => {
+          const on = selectedId === o.id;
+          if (o.shape === "circle") {
+            return (
+              <g key={o.id} style={{ cursor: onSelect ? "pointer" : "default" }} onClick={() => sel(o.id)}>
+                <circle cx={o.cx} cy={o.cy} r={o.r} fill="#fff" stroke="var(--blue-55)" strokeWidth={on ? 3 : 2} />
+                <circle cx={o.cx} cy={o.cy} r={o.r - 4} fill="var(--blue-40)" fillOpacity="0.5" />
+              </g>
+            );
+          }
+          return (
+            <g key={o.id} style={{ cursor: onSelect ? "pointer" : "default" }} onClick={() => sel(o.id)}>
+              <rect x={o.x} y={o.y} width={o.w} height={o.h} rx="3"
+                fill={on ? "var(--neutral-20)" : "var(--neutral-15)"}
+                stroke={on ? "var(--content-primary-a-enabled)" : "var(--neutral-45)"} strokeWidth={on ? 2.5 : 1.5} />
+              <line x1={o.x} y1={o.y} x2={o.x + o.w} y2={o.y + o.h} stroke="var(--neutral-35)" strokeWidth="1" />
+              <line x1={o.x + o.w} y1={o.y} x2={o.x} y2={o.y + o.h} stroke="var(--neutral-35)" strokeWidth="1" />
+              {!view3d && (
+                <text x={o.x + o.w / 2} y={o.y + o.h / 2 + 4} textAnchor="middle" fontSize="11"
+                  fontWeight="600" fill="var(--content-secondary-enabled)">{o.short}</text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* ---------- Датчики ---------- */}
+        {L.sensors && D.SENSORS.map((s) => {
+          const on = selectedId === s.id;
+          return (
+            <g key={s.id} style={{ cursor: onSelect ? "pointer" : "default" }} onClick={() => sel(s.id)}>
+              {on && <circle cx={s.x} cy={s.y} r="16" fill="var(--red-60)" fillOpacity="0.15" />}
+              <circle cx={s.x} cy={s.y} r="9" fill="var(--red-60)" stroke="#fff" strokeWidth="2.5" />
+              <circle cx={s.x} cy={s.y} r="3" fill="#fff" />
+            </g>
+          );
+        })}
+
+        {/* ---------- Размеры ---------- */}
+        {L.dims && (
+          <g fontSize="12" fontWeight="600" fill="var(--content-tertiary-enabled)">
+            <DimLine x1={90} y1={64} x2={910} y2={64} label="124,0 м" />
+            <DimLine x1={64} y1={90} x2={64} y2={590} label="76,0 м" vertical />
+            <DimLine x1={560} y1={616} x2={910} y2={616} label="53,0 м" flip />
+          </g>
+        )}
+
+        {/* ---------- Компас + роза ветров на схеме ---------- */}
+        {L.north && (
+          <g transform="translate(842, 556)">
+            <foreignObject x="-40" y="-40" width="120" height="120">
+              <div xmlns="http://www.w3.org/1999/xhtml" style={{ width: 120, height: 120 }}>
+                <WindRose size={120} north={D.CLIMATE.northDeg} />
+              </div>
+            </foreignObject>
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+function DimLine({ x1, y1, x2, y2, label, vertical, flip }) {
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+  return (
+    <g stroke="var(--neutral-45)" strokeWidth="1">
+      <line x1={x1} y1={y1} x2={x2} y2={y2} />
+      <line x1={x1} y1={vertical ? y1 : y1 - 5} x2={x1} y2={vertical ? y1 : y1 + 5} />
+      <line x1={x2} y1={vertical ? y2 : y2 - 5} x2={x2} y2={vertical ? y2 : y2 + 5} />
+      {vertical
+        ? <text x={x1 - 6} y={my} textAnchor="middle" stroke="none" transform={`rotate(-90 ${x1 - 6} ${my})`}>{label}</text>
+        : <text x={mx} y={flip ? y1 + 16 : y1 - 6} textAnchor="middle" stroke="none">{label}</text>}
+    </g>
+  );
+}
+
+Object.assign(window, { RoofCanvas, WindRose, NorthArrow, RISK_META });
+
+//==== Shell.jsx ====
+// «Снеговые мешки» — оболочка инструмента: шапка, степпер, нижняя навигация.
+const ShIcon = window.__lazyTN("Icon"), ShAvatar = window.__lazyTN("Avatar"), ShButton = window.__lazyTN("Button");
+
+function AppHeader({ project, onHome }) {
+  return (
+    <div style={{
+      height: 64, flex: "0 0 64px", display: "flex", alignItems: "center", gap: 16,
+      padding: "0 24px", background: "#fff", borderBottom: "1px solid var(--border-secondary-enabled)",
+    }}>
+      <button type="button" onClick={onHome} style={{ display: "flex", alignItems: "center", gap: 12, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
+        <div style={{ width: 34, height: 34, borderRadius: 8, background: "var(--red-60)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+          <span style={{ color: "#fff", fontWeight: 800, fontSize: 15, letterSpacing: "-0.02em" }}>TN</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.15, textAlign: "left" }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>Снеговые мешки</span>
+          <span style={{ fontSize: 11, fontWeight: 500, color: "var(--content-tertiary-enabled)" }}>Мониторинг снеговой нагрузки</span>
+        </div>
+      </button>
+
+      {project && (
+        <>
+          <div style={{ width: 1, height: 26, background: "var(--border-secondary-enabled)" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            <ShIcon name="building-2" size={17} color="var(--content-tertiary-enabled)" />
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--content-primary-a-enabled)", whiteSpace: "nowrap" }}>{project.name}</span>
+            <span style={{ fontSize: 13, color: "var(--content-tertiary-enabled)", whiteSpace: "nowrap" }}>· {project.address}</span>
+          </div>
+        </>
+      )}
+
+      <div style={{ flex: 1 }} />
+      <HdrIcon icon="circle-help" title="Справка" />
+      <HdrIcon icon="bell" title="Уведомления" dot />
+      <div style={{ width: 1, height: 26, background: "var(--border-secondary-enabled)", margin: "0 4px" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <ShAvatar text="ГА" size="sm" />
+        <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--content-primary-a-enabled)" }}>Громов А. И.</span>
+          <span style={{ fontSize: 11, color: "var(--content-tertiary-enabled)" }}>Инженер-проектировщик</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HdrIcon({ icon, title, dot }) {
+  const [h, setH] = React.useState(false);
+  return (
+    <button type="button" title={title} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{ position: "relative", width: 38, height: 38, display: "flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: 8, cursor: "pointer", background: h ? "var(--neutral-10)" : "transparent", transition: "background .12s" }}>
+      <ShIcon name={icon} size={20} color="var(--neutral-55)" />
+      {dot && <span style={{ position: "absolute", top: 9, right: 10, width: 7, height: 7, borderRadius: 999, background: "var(--red-60)", border: "1.5px solid #fff" }} />}
+    </button>
+  );
+}
+
+// ---------- Степпер ----------
+function Stepper({ steps, current, maxReached, onJump }) {
+  return (
+    <div style={{ height: 72, flex: "0 0 72px", display: "flex", alignItems: "center", padding: "0 24px", background: "#fff", borderBottom: "1px solid var(--border-secondary-enabled)", gap: 0 }}>
+      {steps.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        const reachable = i <= maxReached;
+        const color = active ? "var(--red-60)" : done ? "var(--content-primary-a-enabled)" : "var(--neutral-40)";
+        return (
+          <React.Fragment key={s.id}>
+            <button type="button" disabled={!reachable} onClick={() => reachable && onJump(i)}
+              style={{ display: "flex", alignItems: "center", gap: 10, border: "none", background: "transparent", padding: "6px 8px", cursor: reachable ? "pointer" : "default", borderRadius: 8 }}>
+              <span style={{
+                width: 28, height: 28, flex: "0 0 28px", borderRadius: 999, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13, fontWeight: 700,
+                background: active ? "var(--red-60)" : done ? "var(--content-primary-a-enabled)" : "var(--neutral-15)",
+                color: active || done ? "#fff" : "var(--neutral-50)",
+                border: active ? "none" : done ? "none" : "1px solid var(--neutral-25)",
+                transition: "all .15s",
+              }}>
+                {done ? <ShIcon name="check" size={15} color="#fff" /> : s.n}
+              </span>
+              <span style={{ fontSize: 13.5, fontWeight: active ? 700 : 600, color, whiteSpace: "nowrap" }}>{s.label}</span>
+            </button>
+            {i < steps.length - 1 && (
+              <div style={{ flex: 1, height: 2, minWidth: 12, background: i < current ? "var(--content-primary-a-enabled)" : "var(--neutral-20)", margin: "0 2px", borderRadius: 2 }} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------- Нижняя навигация мастера ----------
+function WizardFooter({ current, total, onBack, onNext, nextLabel, nextIcon, nextVariant, hint, onDraft }) {
+  return (
+    <div style={{ height: 72, flex: "0 0 72px", display: "flex", alignItems: "center", gap: 14, padding: "0 28px", background: "#fff", borderTop: "1px solid var(--border-secondary-enabled)" }}>
+      <ShButton variant="white" icon="arrow-left" size="md" onClick={onBack} disabled={current === 0}>Назад</ShButton>
+      {hint && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 6 }}>
+          <ShIcon name="info" size={16} color="var(--content-tertiary-enabled)" />
+          <span style={{ fontSize: 13, color: "var(--content-tertiary-enabled)" }}>{hint}</span>
+        </div>
+      )}
+      <div style={{ flex: 1 }} />
+      <span style={{ fontSize: 13, fontWeight: 600, color: "var(--content-tertiary-enabled)" }}>Шаг {current + 1} из {total}</span>
+      {onDraft && <ShButton variant="secondary" icon="save" size="md" onClick={onDraft}>Сохранить черновик</ShButton>}
+      <ShButton variant={nextVariant || "primary"} iconRight={nextIcon || "arrow-right"} size="md" onClick={onNext}>{nextLabel || "Далее"}</ShButton>
+    </div>
+  );
+}
+
+// ---------- Каркас рабочей области: холст слева + панель справа ----------
+function WorkArea({ canvas, panel, panelWidth = 380 }) {
+  return (
+    <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, position: "relative", background: "var(--neutral-10)", display: "flex" }}>
+        {canvas}
+      </div>
+      <div style={{ width: panelWidth, flex: `0 0 ${panelWidth}px`, borderLeft: "1px solid var(--border-secondary-enabled)", background: "#fff", display: "flex", flexDirection: "column", minHeight: 0 }}>
+        {panel}
+      </div>
+    </div>
+  );
+}
+
+// маленький заголовок секции панели
+function PanelHead({ title, count, action }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "18px 20px 12px" }}>
+      <span style={{ fontSize: 15, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>{title}</span>
+      {count != null && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--content-tertiary-enabled)" }}>· {count}</span>}
+      <div style={{ flex: 1 }} />
+      {action}
+    </div>
+  );
+}
+
+Object.assign(window, { AppHeader, Stepper, WizardFooter, WorkArea, PanelHead });
+
+//==== Projects.jsx ====
+// «Снеговые мешки» — дашборд проектов (точка входа).
+const PrIcon = window.__lazyTN("Icon"), PrButton = window.__lazyTN("Button"), PrTag = window.__lazyTN("Tag"), PrSearch = window.__lazyTN("Search"), PrAvatar = window.__lazyTN("Avatar");
+
+function StatCard({ icon, value, label, tone }) {
+  return (
+    <div style={{ flex: 1, background: "#fff", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-lg)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ width: 42, height: 42, borderRadius: 10, flex: "0 0 42px", display: "flex", alignItems: "center", justifyContent: "center", background: `var(--${tone}-10)` }}>
+        <PrIcon name={icon} size={22} color={`var(--${tone}-60)`} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--content-primary-a-enabled)", lineHeight: 1.1 }}>{value}</div>
+        <div style={{ fontSize: 12.5, color: "var(--content-tertiary-enabled)", marginTop: 2 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectsView({ onOpen, onNew }) {
+  const D = window.SNOW_DATA;
+  return (
+    <div style={{ flex: 1, overflowY: "auto", background: "var(--neutral-10)" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 40px 48px" }}>
+        {/* Заголовок */}
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginBottom: 24 }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: "var(--content-primary-a-enabled)", letterSpacing: "-0.01em" }}>Проекты</h1>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--content-tertiary-enabled)" }}>Проектирование систем мониторинга снеговой нагрузки на плоских кровлях</p>
+          </div>
+          <div style={{ flex: 1 }} />
+          <div style={{ width: 280 }}><PrSearch placeholder="Поиск по объектам" size="md" /></div>
+          <PrButton variant="accent" icon="plus" size="lg" onClick={onNew}>Новый проект</PrButton>
+        </div>
+
+        {/* KPI */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 28 }}>
+          <StatCard icon="folder" value="42" label="Объектов в работе" tone="blue" />
+          <StatCard icon="file-check-2" value="187" label="Готовых проектов" tone="green" />
+          <StatCard icon="radio" value="1 240" label="Датчиков размещено" tone="red" />
+          <StatCard icon="timer" value="8 мин" label="Среднее время проекта" tone="orange" />
+        </div>
+
+        {/* Таблица проектов */}
+        <div style={{ background: "#fff", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-lg)", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", padding: "14px 22px", borderBottom: "1px solid var(--border-secondary-enabled)" }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>Недавние объекты</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--content-tertiary-enabled)", marginLeft: 8 }}>· {D.PROJECTS.length}</span>
+            <div style={{ flex: 1 }} />
+            <PrButton variant="link" iconRight="chevron-down" size="sm">Все объекты</PrButton>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2.4fr) 1.3fr 0.9fr 0.8fr 1fr 36px", alignItems: "center", padding: "10px 22px", borderBottom: "1px solid var(--neutral-15)", fontSize: 12, fontWeight: 600, letterSpacing: "0.02em", color: "var(--content-tertiary-enabled)", textTransform: "uppercase" }}>
+            <span>Объект</span><span>Город</span><span>Площадь</span><span>Датчики</span><span>Статус</span><span></span>
+          </div>
+
+          {D.PROJECTS.map((p, i) => <ProjectRow key={i} p={p} onOpen={onOpen} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProjectRow({ p, onOpen }) {
+  const [h, setH] = React.useState(false);
+  return (
+    <button type="button" onClick={() => onOpen(p)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{ width: "100%", textAlign: "left", border: "none", borderBottom: "1px solid var(--neutral-15)", cursor: "pointer", background: h ? "var(--neutral-10)" : "#fff", display: "grid", gridTemplateColumns: "minmax(0,2.4fr) 1.3fr 0.9fr 0.8fr 1fr 36px", alignItems: "center", padding: "16px 22px", transition: "background .12s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
+        <PrAvatar icon="building-2" square size="md" color="var(--blue-10)" />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: "var(--content-primary-a-enabled)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+            {p.current && <PrTag tone="red" size="sm">текущий</PrTag>}
+          </div>
+          <div style={{ fontSize: 12.5, color: "var(--content-tertiary-enabled)", marginTop: 2 }}>Изменён: {p.updated}</div>
+        </div>
+      </div>
+      <span style={{ fontSize: 14, color: "var(--content-secondary-enabled)" }}>{p.city}</span>
+      <span style={{ fontSize: 14, color: "var(--content-secondary-enabled)" }}>{p.area} м²</span>
+      <span style={{ fontSize: 14, color: "var(--content-secondary-enabled)" }}>{p.sensors || "—"}</span>
+      <span><PrTag tone={p.tone} size="md">{p.status}</PrTag></span>
+      <span style={{ display: "flex", justifyContent: "flex-end" }}><PrIcon name="chevron-right" size={18} color="var(--neutral-40)" /></span>
+    </button>
+  );
+}
+
+Object.assign(window, { ProjectsView });
+
+//==== StepsA.jsx ====
+// «Снеговые мешки» — шаги 1–3: Загрузка, Геометрия кровли, Препятствия.
+const SA = window.__lazyNS();
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return bytes + " Б";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1).replace(".", ",") + " КБ";
+  return (bytes / (1024 * 1024)).toFixed(1).replace(".", ",") + " МБ";
+}
+
+// ============ Шаг 1 — Загрузка данных ============
+function StepUpload({
+  isNew = false,
+  files = [],
+  scale = null,
+  mapAddress = "",
+  mapSelected = false,
+  onFileAdd,
+  onMapSelect,
+}) {
+  const [tab, setTab] = React.useState("file");
+  const [zoom, setZoom] = React.useState(100);
+  const [rot, setRot] = React.useState(0);
+  const [address, setAddress] = React.useState(mapAddress);
+  const fileRef = React.useRef(null);
+
+  React.useEffect(() => { setAddress(mapAddress); }, [mapAddress]);
+
+  const hasFile = files.length > 0;
+  const showFilePreview = !isNew || hasFile;
+  const showMap = !isNew || mapSelected;
+
+  function handleFileInput(e) {
+    const file = e.target.files?.[0];
+    if (!file || !onFileAdd) return;
+    onFileAdd({
+      name: file.name,
+      size: formatFileSize(file.size),
+      desc: /\.(dwg|dxf)$/i.test(file.name) ? "узел / чертёж" : "план кровли",
+      selected: true,
+    });
+    e.target.value = "";
+  }
+
+  function handleMapSearch() {
+    const q = address.trim();
+    if (!q || !onMapSelect) return;
+    onMapSelect(q);
+  }
+
+  return (
+    <div style={{ flex: 1, display: "flex", minHeight: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", background: "var(--neutral-10)" }}>
+        <SA.Tabs variant="segmented" value={tab}
+          options={[{ id: "file", name: "Файл чертежа", icon: "file-text" }, { id: "map", name: "Адрес на карте", icon: "map-pin" }]}
+          onChange={setTab} />
+        {tab === "file" ? (
+          <>
+            {showFilePreview && (
+              <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "12px 20px", background: "#fff", borderBottom: "1px solid var(--border-secondary-enabled)", margin: "0 20px", borderRadius: "0 0 var(--radius-lg) var(--radius-lg)" }}>
+                <ViewBtn icon="minus" onClick={() => setZoom((z) => Math.max(40, z - 20))} />
+                <span style={{ fontSize: 13, fontWeight: 600, width: 48, textAlign: "center", color: "var(--content-secondary-enabled)" }}>{zoom}%</span>
+                <ViewBtn icon="plus" onClick={() => setZoom((z) => Math.min(200, z + 20))} />
+                <div style={{ width: 1, height: 22, background: "var(--border-secondary-enabled)", margin: "0 6px" }} />
+                <ViewBtn icon="rotate-cw" onClick={() => setRot((r) => r + 90)} />
+                <div style={{ flex: 1 }} />
+                <SA.Button variant="white" icon="ruler" size="sm">Привязать масштаб{scale ? ` · ${scale}` : ""}</SA.Button>
+              </div>
+            )}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, overflow: "hidden" }}>
+              {showFilePreview ? (
+                <div style={{ background: "#fff", border: "1px solid var(--border-secondary-enabled)", boxShadow: "var(--shadow-small)", borderRadius: 4, padding: 18, transform: `scale(${zoom / 100}) rotate(${rot}deg)`, transition: "transform .25s" }}>
+                  <div style={{ width: 560, height: 380, filter: "grayscale(1) opacity(.7)" }}>
+                    <window.RoofCanvas layers={{ geometry: true, parapet: true, obstacles: true }} height="380px" />
+                  </div>
+                  <div style={{ marginTop: 10, fontFamily: "var(--font-family-mono, monospace)", fontSize: 11, color: "var(--content-tertiary-enabled)", textAlign: "center" }}>
+                    {(files.find((f) => f.selected) || files[0])?.name || "Кровля_Север-2.pdf"} · лист 1 · план кровли
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: "center", maxWidth: 320 }}>
+                  <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 999, background: "var(--neutral-15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <SA.Icon name="file-text" size={28} color="var(--neutral-40)" />
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: "var(--content-secondary-enabled)", marginBottom: 6 }}>Чертёж не загружен</div>
+                  <div style={{ fontSize: 13, color: "var(--content-tertiary-enabled)", lineHeight: 1.5 }}>Загрузите файл в панели справа — план кровли появится здесь</div>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={{ flex: 1, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", margin: 20, borderRadius: "var(--radius-lg)", overflow: "hidden", border: "1px solid var(--border-secondary-enabled)", background: "repeating-linear-gradient(45deg, #eef0f4, #eef0f4 12px, #e7e9ef 12px, #e7e9ef 24px)" }}>
+            {showMap && <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at 60% 45%, rgba(225,27,17,.10), transparent 40%)" }} />}
+            {showMap && <SA.Icon name="map-pin" size={40} color="var(--red-60)" style={{ position: "absolute", top: "42%", left: "60%" }} />}
+            <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", gap: 8 }}>
+              <div style={{ flex: 1 }}>
+                <SA.Input icon="search" placeholder="Введите адрес объекта" value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleMapSearch()} />
+              </div>
+              <SA.Button variant="accent" icon="map-pin" size="lg" onClick={handleMapSearch}>Указать на карте</SA.Button>
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 12, color: "var(--neutral-55)" }}>
+              {showMap ? "Яндекс.Карты · спутниковый снимок" : "Введите адрес и нажмите «Указать на карте»"}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ width: 380, flex: "0 0 380px", borderLeft: "1px solid var(--border-secondary-enabled)", background: "#fff", display: "flex", flexDirection: "column", overflowY: "auto" }}>
+        {tab === "file" ? (
+          <>
+            <window.PanelHead title="Источник данных" />
+            <div style={{ padding: "0 20px 16px" }}>
+              <div role="button" tabIndex={0} onClick={() => fileRef.current?.click()}
+                onKeyDown={(e) => e.key === "Enter" && fileRef.current?.click()}
+                style={{ border: "1.5px dashed var(--border-secondary-enabled)", borderRadius: "var(--radius-lg)", padding: "22px 18px", textAlign: "center", background: "var(--neutral-10)", cursor: "pointer" }}>
+                <input ref={fileRef} type="file" accept=".pdf,.dwg,.dxf,.jpg,.jpeg,.png" hidden onChange={handleFileInput} />
+                <div style={{ width: 46, height: 46, margin: "0 auto 10px", borderRadius: 999, background: "var(--red-10)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <SA.Icon name="upload" size={22} color="var(--red-60)" />
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--content-primary-a-enabled)" }}>Перетащите файл сюда</div>
+                <div style={{ fontSize: 12.5, color: "var(--content-tertiary-enabled)", margin: "4px 0 12px" }}>PDF, DWG, DXF, JPG, PNG · до 100 МБ</div>
+                <SA.Button variant="white" size="sm" icon="folder-open" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>Выбрать файл</SA.Button>
+              </div>
+            </div>
+            {hasFile && (
+              <>
+                <window.PanelHead title="Загруженные файлы" count={files.length} />
+                <div style={{ padding: "0 12px" }}>
+                  {files.map((f, i) => (
+                    <SA.Cell key={i} leftIcon="file-text" title={f.name} subtitle={`${f.size} · ${f.desc}`}
+                      rightIcon={f.selected ? "check" : "ellipsis-vertical"} selected={f.selected} />
+                  ))}
+                </div>
+              </>
+            )}
+            {scale && (
+              <div style={{ margin: "12px 20px", padding: "14px 16px", background: "var(--blue-10)", borderRadius: "var(--radius-md)", display: "flex", gap: 10 }}>
+                <SA.Icon name="info" size={18} color="var(--blue-60)" />
+                <span style={{ fontSize: 12.5, color: "var(--blue-65)", lineHeight: 1.45 }}>Масштаб распознан по штампу чертежа: <b>{scale}</b>. При необходимости задайте вручную по известному размеру.</span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <window.PanelHead title="Адрес объекта" />
+            <div style={{ padding: "0 20px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--content-secondary-enabled)", marginBottom: 6 }}>Адрес на карте</div>
+                <SA.Input icon="map-pin" placeholder="г. Екатеринбург, ул. Примерная, 1" value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleMapSearch()} />
+              </div>
+              <SA.Button variant="accent" icon="search" size="md" block onClick={handleMapSearch}>Найти на Яндекс.Картах</SA.Button>
+              {mapSelected ? (
+                <div style={{ padding: "12px 14px", background: "var(--green-10)", borderRadius: "var(--radius-md)", display: "flex", gap: 10 }}>
+                  <SA.Icon name="circle-check" size={18} color="var(--green-55)" />
+                  <span style={{ fontSize: 12.5, color: "var(--green-65)", lineHeight: 1.45 }}>Объект найден. Спутниковый снимок загружен — проверьте контур здания на карте.</span>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: 12.5, color: "var(--content-tertiary-enabled)", lineHeight: 1.45 }}>Укажите адрес объекта — карта отобразит спутниковый снимок кровли для дальнейшей обводки контура.</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ViewBtn({ icon, onClick }) {
+  const [h, setH] = React.useState(false);
+  return (
+    <button type="button" onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--border-secondary-enabled)", borderRadius: 8, cursor: "pointer", background: h ? "var(--neutral-10)" : "#fff" }}>
+      <SA.Icon name={icon} size={16} color="var(--content-secondary-enabled)" />
+    </button>
+  );
+}
+
+// ============ Шаг 2 — Геометрия кровли ============
+function StepGeometry() {
+  const items = [
+    { icon: "spline", name: "Внешний контур кровли", val: "L-образный, 6 вершин", conf: 98 },
+    { icon: "frame", name: "Парапет по периметру", val: "Высота 600 мм", conf: 95 },
+    { icon: "layout-dashboard", name: "Внутренние зоны / уклоны", val: "4 ската к воронкам", conf: 90 },
+    { icon: "move-diagonal", name: "Габариты в плане", val: "124,0 × 76,0 м", conf: 96 },
+  ];
+  return (
+    <window.WorkArea
+      canvas={<window.RoofCanvas layers={{ geometry: true, parapet: true, dims: true }} />}
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+          <window.PanelHead title="Распознанная геометрия" action={<SA.Tag tone="green" size="sm" icon="sparkles">авто · 92%</SA.Tag>} />
+          <div style={{ margin: "0 20px 14px", padding: "12px 14px", background: "var(--green-10)", borderRadius: "var(--radius-md)", display: "flex", gap: 10 }}>
+            <SA.Icon name="circle-check" size={18} color="var(--green-55)" />
+            <span style={{ fontSize: 12.5, color: "var(--green-65)", lineHeight: 1.45 }}>Контур кровли распознан автоматически. Проверьте элементы и подтвердите либо скорректируйте вручную.</span>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+            {items.map((it, i) => (
+              <SA.Cell key={i} leftIcon={it.icon} title={it.name} subtitle={it.val}
+                rightSlot={<span style={{ fontSize: 12.5, fontWeight: 700, color: it.conf >= 95 ? "var(--green-55)" : "var(--orange-50)" }}>{it.conf}%</span>} />
+            ))}
+          </div>
+          <div style={{ padding: 16, borderTop: "1px solid var(--border-secondary-enabled)", display: "flex", gap: 10 }}>
+            <SA.Button variant="white" icon="pen-line" size="md" block>Корректировать</SA.Button>
+            <SA.Button variant="secondary" icon="check" size="md" block>Принять контур</SA.Button>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+// ============ Шаг 3 — Препятствия ============
+function StepObstacles() {
+  const D = window.SNOW_DATA;
+  const [sel, setSel] = React.useState("shaft-1");
+  const list = D.OBSTACLES;
+  const selObj = list.find((o) => o.id === sel);
+  return (
+    <window.WorkArea
+      canvas={<window.RoofCanvas layers={{ geometry: true, parapet: true, obstacles: true, walkway: true }} selectedId={sel} onSelect={setSel} />}
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+          <window.PanelHead title="Препятствия" count={list.length} action={<SA.Button variant="white" size="sm" icon="plus">Добавить</SA.Button>} />
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+            {list.map((o) => (
+              <SA.Cell key={o.id} selected={o.id === sel} onClick={() => setSel(o.id)}
+                leftIcon={o.shape === "circle" ? "circle-dot" : "box"}
+                title={o.type}
+                subtitle={o.shape === "circle" ? "Точечный объект" : `${o.size} · h ${o.hM} м`}
+                rightIcon="chevron-right" />
+            ))}
+          </div>
+          {selObj && selObj.shape !== "circle" && (
+            <div style={{ padding: 18, borderTop: "1px solid var(--border-secondary-enabled)", background: "var(--neutral-10)" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "var(--content-primary-a-enabled)", marginBottom: 10 }}>{selObj.type}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", fontSize: 13 }}>
+                <Prop k="Тип" v={selObj.short} />
+                <Prop k="Высота" v={`${selObj.hM} м`} />
+                <Prop k="Габариты" v={selObj.size} />
+                <Prop k="Координаты" v={`X ${Math.round(selObj.x / 6.6)}, Y ${Math.round(selObj.y / 6.6)} м`} />
+              </div>
+            </div>
+          )}
+        </div>
+      }
+    />
+  );
+}
+
+function Prop({ k, v }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)" }}>{k}</div>
+      <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--content-primary-a-enabled)" }}>{v}</div>
+    </div>
+  );
+}
+
+Object.assign(window, { StepUpload, StepGeometry, StepObstacles });
+
+//==== StepsB.jsx ====
+// «Снеговые мешки» — шаги 4–6: Ориентация и климат, Снеговые мешки, Датчики.
+const SB = window.__lazyNS();
+
+function FieldRow({ label, children }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--content-secondary-enabled)", marginBottom: 6 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+// ============ Шаг 4 — Ориентация и климат ============
+function StepClimate() {
+  const C = window.SNOW_DATA.CLIMATE;
+  return (
+    <window.WorkArea panelWidth={400}
+      canvas={<window.RoofCanvas layers={{ geometry: true, parapet: true, obstacles: true, north: true }} />}
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%", overflowY: "auto" }}>
+          <window.PanelHead title="Привязка к местности" action={<SB.Tag tone="green" size="sm" icon="map-pin">по адресу</SB.Tag>} />
+          <div style={{ padding: "0 20px 6px" }}>
+            <FieldRow label="Город (определён по адресу)">
+              <SB.Input icon="building-2" defaultValue="Екатеринбург" />
+            </FieldRow>
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <FieldRow label="Снеговой район (СП 20.13330)">
+                  <SB.Select value="3" options={[
+                    { id: "2", title: "II · 1,2 кПа" }, { id: "3", title: "III · 1,8 кПа" },
+                    { id: "4", title: "IV · 2,4 кПа" }, { id: "5", title: "V · 3,0 кПа" },
+                  ]} />
+                </FieldRow>
+              </div>
+              <div style={{ flex: 1 }}>
+                <FieldRow label="Ветровой район">
+                  <SB.Select value="2" options={[
+                    { id: "1", title: "I · 0,23 кПа" }, { id: "2", title: "II · 0,30 кПа" },
+                    { id: "3", title: "III · 0,38 кПа" },
+                  ]} />
+                </FieldRow>
+              </div>
+            </div>
+          </div>
+
+          {/* Климат-сводка */}
+          <div style={{ margin: "4px 20px 16px", padding: "14px 16px", background: "var(--neutral-10)", borderRadius: "var(--radius-lg)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px" }}>
+            <Metric k="Вес снег. покрова, Sg" v={`${C.sg} кПа`} sub={`${C.sgKg} кг/м²`} />
+            <Metric k="Ветровое давление, w₀" v={`${C.w0} кПа`} sub="тип местности B" />
+          </div>
+
+          <window.PanelHead title="Ориентация и роза ветров" />
+          <div style={{ display: "flex", gap: 14, padding: "0 20px 20px", alignItems: "center" }}>
+            <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <window.NorthArrow size={84} deg={C.northDeg} />
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--content-secondary-enabled)" }}>Север {C.northDeg}°</span>
+            </div>
+            <div style={{ flex: 1, background: "#fff", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-lg)", padding: 12, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <window.WindRose size={150} north={C.northDeg} />
+              <span style={{ fontSize: 12, color: "var(--content-tertiary-enabled)", marginTop: 4 }}>Преобладающий ветер — <b style={{ color: "var(--red-60)" }}>З, ЮЗ</b></span>
+            </div>
+          </div>
+          <div style={{ margin: "0 20px 20px", padding: "12px 16px", background: "var(--blue-10)", borderRadius: "var(--radius-md)", display: "flex", gap: 10 }}>
+            <SB.Icon name="wind" size={18} color="var(--blue-60)" />
+            <span style={{ fontSize: 12.5, color: "var(--blue-65)", lineHeight: 1.45 }}>Снеговые мешки формируются преимущественно с подветренной (восточной) стороны препятствий и парапетов.</span>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+function Metric({ k, v, sub }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)" }}>{k}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: "var(--content-primary-a-enabled)", lineHeight: 1.2 }}>{v}</div>
+      {sub && <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)" }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ============ Шаг 5 — Снеговые мешки ============
+function StepSnowbags() {
+  const D = window.SNOW_DATA;
+  const [sel, setSel] = React.useState(null);
+  const bags = D.SNOWBAGS;
+  return (
+    <window.WorkArea panelWidth={400}
+      canvas={
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <window.RoofCanvas layers={{ geometry: true, parapet: true, obstacles: true, bags: true, north: true }} selectedId={sel} onSelect={setSel} />
+          <Legend />
+        </div>
+      }
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+          <window.PanelHead title="Зоны снегонакопления" count={bags.length} action={<SB.Tag tone="green" size="sm" icon="sparkles">СП 20.13330</SB.Tag>} />
+          <div style={{ display: "flex", gap: 8, padding: "0 20px 12px" }}>
+            <Chip tone="red" n={D.METRICS.risk.critical} t="критич." />
+            <Chip tone="orange" n={D.METRICS.risk.high} t="высоких" />
+            <Chip tone="yellow" n={D.METRICS.risk.medium} t="средних" />
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            {bags.map((z) => <BagCard key={z.id} z={z} on={sel === z.id} onClick={() => setSel(sel === z.id ? null : z.id)} />)}
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+function BagCard({ z, on, onClick }) {
+  const m = window.RISK_META[z.risk];
+  return (
+    <button type="button" onClick={onClick} style={{ textAlign: "left", border: `1px solid ${on ? m.line : "var(--border-secondary-enabled)"}`, borderLeft: `4px solid ${m.fill}`, borderRadius: "var(--radius-md)", background: on ? m.soft : "#fff", padding: "12px 14px", cursor: "pointer", transition: "all .12s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: m.line }}>{z.id}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: "var(--content-primary-a-enabled)" }}>{z.name}</span>
+        <div style={{ flex: 1 }} />
+        <SB.Tag tone={m.tone} size="sm">{m.label}</SB.Tag>
+      </div>
+      <div style={{ display: "flex", gap: 18, marginBottom: 6 }}>
+        <Mini k="Коэф. μ" v={z.mu.toLocaleString("ru")} />
+        <Mini k="Нагрузка S" v={`${z.load} кПа`} />
+        <Mini k="Площадь" v={`${z.area} м²`} />
+      </div>
+      <div style={{ fontSize: 12, color: "var(--content-tertiary-enabled)", display: "flex", alignItems: "center", gap: 6 }}>
+        <SB.Icon name="info" size={13} color="var(--content-tertiary-enabled)" />Основание: {z.basis}
+      </div>
+    </button>
+  );
+}
+
+function Mini({ k, v }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "var(--content-tertiary-enabled)" }}>{k}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>{v}</div>
+    </div>
+  );
+}
+
+function Chip({ tone, n, t }) {
+  return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 7, padding: "8px 10px", borderRadius: "var(--radius-md)", background: `var(--${tone}-10)` }}>
+      <span style={{ fontSize: 17, fontWeight: 800, color: `var(--${tone}-${tone === "yellow" ? 40 : 60})` }}>{n}</span>
+      <span style={{ fontSize: 12, color: "var(--content-secondary-enabled)" }}>{t}</span>
+    </div>
+  );
+}
+
+function Legend() {
+  const items = [["critical", "Критическая"], ["high", "Высокая"], ["medium", "Средняя"]];
+  return (
+    <div style={{ position: "absolute", left: 24, bottom: 20, display: "flex", gap: 14, background: "rgba(255,255,255,.92)", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-md)", padding: "8px 14px", backdropFilter: "blur(2px)" }}>
+      {items.map(([r, l]) => (
+        <div key={r} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 12, height: 12, borderRadius: 3, background: window.RISK_META[r].fill, opacity: 0.7 }} />
+          <span style={{ fontSize: 12, color: "var(--content-secondary-enabled)" }}>{l}</span>
+        </div>
+      ))}
+      <div style={{ width: 1, background: "var(--border-secondary-enabled)" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ width: 11, height: 11, borderRadius: 999, background: "var(--red-60)", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--red-60)" }} />
+        <span style={{ fontSize: 12, color: "var(--content-secondary-enabled)" }}>Датчик</span>
+      </div>
+    </div>
+  );
+}
+
+// ============ Шаг 6 — Датчики ============
+function StepSensors() {
+  const D = window.SNOW_DATA;
+  const [sel, setSel] = React.useState(null);
+  return (
+    <window.WorkArea panelWidth={400}
+      canvas={
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <window.RoofCanvas layers={{ geometry: true, parapet: true, obstacles: true, bags: true, sensors: true, north: true }} selectedId={sel} onSelect={setSel} />
+          <Legend />
+        </div>
+      }
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+          <window.PanelHead title="Расстановка датчиков" count={`${D.SENSORS.length} шт.`} action={<SB.Tag tone="green" size="sm" icon="sparkles">авто</SB.Tag>} />
+          <div style={{ display: "flex", gap: 10, padding: "0 20px 14px" }}>
+            <StatBox v={`${D.METRICS.coverage}%`} k="покрытие зон" />
+            <StatBox v="18,5 м" k="ср. шаг сетки" />
+            <StatBox v="3,0 м" k="до парапета" />
+          </div>
+          <div style={{ padding: "0 20px 12px", display: "flex", gap: 10 }}>
+            <SB.Button variant="white" size="sm" icon="plus" block>Добавить датчик</SB.Button>
+            <SB.Button variant="white" size="sm" icon="move" block>Переместить</SB.Button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "0 12px" }}>
+            {D.SENSORS.map((s) => {
+              const z = D.SNOWBAGS.find((b) => b.id === s.zone);
+              const m = z ? window.RISK_META[z.risk] : null;
+              return (
+                <SB.Cell key={s.id} selected={s.id === sel} onClick={() => setSel(s.id)}
+                  leftIcon="radio" title={`Датчик ${s.id}`}
+                  subtitle={z ? `Зона ${z.id} · ${z.name}` : "Контрольная точка"}
+                  rightSlot={m ? <SB.Tag tone={m.tone} size="sm">{z.load} кПа</SB.Tag> : <SB.Tag tone="neutral" size="sm">норма</SB.Tag>} />
+              );
+            })}
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+function StatBox({ v, k }) {
+  return (
+    <div style={{ flex: 1, background: "var(--neutral-10)", borderRadius: "var(--radius-md)", padding: "10px 12px" }}>
+      <div style={{ fontSize: 17, fontWeight: 800, color: "var(--content-primary-a-enabled)" }}>{v}</div>
+      <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)" }}>{k}</div>
+    </div>
+  );
+}
+
+Object.assign(window, { StepClimate, StepSnowbags, StepSensors });
+
+//==== Result.jsx ====
+// «Снеговые мешки» — шаг 7: результат, предпросмотр 2D/3D, экспорт документов.
+const SR = window.__lazyNS();
+
+function ResultView({ onExport }) {
+  const D = window.SNOW_DATA, M = D.METRICS;
+  const [view, setView] = React.useState("2d");
+  return (
+    <window.WorkArea panelWidth={400}
+      canvas={
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", background: "#fff", borderBottom: "1px solid var(--border-secondary-enabled)" }}>
+            <SR.Tabs variant="segmented" value={view}
+              options={[{ id: "2d", name: "2D-схема", icon: "map" }, { id: "3d", name: "3D-карта снега", icon: "box" }]}
+              onChange={setView} />
+            <div style={{ flex: 1 }} />
+            <span style={{ fontSize: 12.5, color: "var(--content-tertiary-enabled)" }}>{D.PROJECT.norm}</span>
+          </div>
+          <div style={{ flex: 1, position: "relative", minHeight: 0 }}>
+            <window.RoofCanvas view3d={view === "3d"}
+              layers={{ geometry: true, parapet: true, obstacles: true, walkway: view === "2d", bags: true, sensors: true, dims: view === "2d", north: true }} />
+            <Legend />
+            {view === "3d" && (
+              <div style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,.92)", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-md)", padding: "8px 12px", fontSize: 12, color: "var(--content-secondary-enabled)" }}>
+                Высота снежного покрова — аналог тепловой карты
+              </div>
+            )}
+          </div>
+        </div>
+      }
+      panel={
+        <div style={{ display: "flex", flexDirection: "column", minHeight: 0, height: "100%" }}>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            <window.PanelHead title="Итоговые показатели" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, padding: "0 20px 8px" }}>
+              <ResMetric icon="square-dashed" v={`${M.roofArea} м²`} k="Площадь кровли" tone="blue" />
+              <ResMetric icon="snowflake" v={`${M.bagsArea} м²`} k={`Снеговые мешки · ${M.bagsShare}%`} tone="orange" />
+              <ResMetric icon="radio" v={`${M.sensors} шт.`} k="Датчиков" tone="red" />
+              <ResMetric icon="gauge" v={`${M.maxLoad} кПа`} k="Макс. нагрузка" tone="red" />
+            </div>
+
+            <window.PanelHead title="Спецификация оборудования" />
+            <div style={{ padding: "0 20px 8px" }}>
+              {D.SPEC.map((s) => (
+                <div key={s.pos} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderBottom: "1px solid var(--neutral-15)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--content-tertiary-enabled)", width: 16 }}>{s.pos}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: "var(--content-primary-a-enabled)" }}>{s.name}</div>
+                    <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)" }}>{s.note}</div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--content-primary-a-enabled)", whiteSpace: "nowrap" }}>{s.qty} {s.unit}</span>
+                </div>
+              ))}
+            </div>
+
+            <window.PanelHead title="Состав комплекта" />
+            <div style={{ padding: "0 12px 12px" }}>
+              <SR.Cell leftIcon="file-text" title="PDF-схема проекта" subtitle="План, мешки, датчики, легенда" rightText="A1" />
+              <SR.Cell leftIcon="sheet" title="Excel-отчёт" subtitle="Площади, координаты, спецификация" rightText="XLSX" />
+              <SR.Cell leftIcon="braces" title="Выгрузка JSON" subtitle="Для интеграции с CRM / BIM" rightText="JSON" />
+            </div>
+          </div>
+          <div style={{ padding: 16, borderTop: "1px solid var(--border-secondary-enabled)", display: "flex", gap: 10 }}>
+            <SR.Button variant="white" icon="share-2" size="md">Поделиться</SR.Button>
+            <SR.Button variant="accent" icon="download" size="md" block onClick={onExport}>Экспорт документов</SR.Button>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
+function ResMetric({ icon, v, k, tone }) {
+  return (
+    <div style={{ background: "var(--neutral-10)", borderRadius: "var(--radius-lg)", padding: "12px 14px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <SR.Icon name={icon} size={17} color={`var(--${tone}-60)`} />
+      </div>
+      <div style={{ fontSize: 19, fontWeight: 800, color: "var(--content-primary-a-enabled)", lineHeight: 1.1 }}>{v}</div>
+      <div style={{ fontSize: 11.5, color: "var(--content-tertiary-enabled)", marginTop: 2 }}>{k}</div>
+    </div>
+  );
+}
+
+// ---------- Диалог экспорта ----------
+function ExportDialog({ onClose }) {
+  const [done, setDone] = React.useState(false);
+  const docs = [
+    { icon: "file-text", t: "PDF-схема проекта", s: "Формат A1 · корпоративный штамп ТехноНИКОЛь", on: true },
+    { icon: "sheet", t: "Excel-отчёт", s: "Площади, координаты датчиков, спецификация", on: true },
+    { icon: "braces", t: "JSON для интеграции", s: "Геометрия, зоны, датчики", on: false },
+  ];
+  return (
+    <SR.Dialog title="Экспорт документов" width={460} onClose={onClose}
+      footer={done
+        ? <SR.Button variant="primary" icon="check" onClick={onClose}>Готово</SR.Button>
+        : <><SR.Button variant="secondary" onClick={onClose}>Отмена</SR.Button><SR.Button variant="accent" icon="download" onClick={() => setDone(true)}>Сформировать</SR.Button></>}>
+      {done ? (
+        <div style={{ textAlign: "center", padding: "12px 0" }}>
+          <div style={{ width: 56, height: 56, margin: "0 auto 14px", borderRadius: 999, background: "var(--green-10)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <SR.Icon name="check" size={28} color="var(--green-55)" />
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>Документы сформированы</div>
+          <div style={{ fontSize: 13.5, color: "var(--content-tertiary-enabled)", marginTop: 4 }}>Комплект проектной документации по объекту «Север-2» готов к скачиванию.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 13.5, color: "var(--content-secondary-enabled)", marginBottom: 2 }}>Выберите выходные документы:</div>
+          {docs.map((d, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-md)" }}>
+              <SR.Icon name={d.icon} size={20} color="var(--content-secondary-enabled)" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--content-primary-a-enabled)" }}>{d.t}</div>
+                <div style={{ fontSize: 12, color: "var(--content-tertiary-enabled)" }}>{d.s}</div>
+              </div>
+              <SR.Switch defaultChecked={d.on} size="sm" />
+            </div>
+          ))}
+        </div>
+      )}
+    </SR.Dialog>
+  );
+}
+
+Object.assign(window, { ResultView, ExportDialog });
+
+//==== app.jsx ====
+// «Снеговые мешки» — корневая оркестрация: дашборд → мастер из 7 шагов → результат.
+const AppIcon = window.__lazyTN("Icon");
+
+const CALC_STEPS = [
+  "Анализ геометрии кровли и препятствий",
+  "Расчёт коэффициентов μ по СП 20.13330.2016",
+  "Построение зон снегонакопления",
+  "Подбор расстановки датчиков",
+];
+
+function Calculating({ onDone }) {
+  const [step, setStep] = React.useState(0);
+  const [pct, setPct] = React.useState(5);
+  React.useEffect(() => {
+    const t1 = setInterval(() => setPct((p) => Math.min(100, p + 4)), 90);
+    const t2 = setInterval(() => setStep((s) => Math.min(CALC_STEPS.length - 1, s + 1)), 760);
+    const done = setTimeout(onDone, 3100);
+    return () => { clearInterval(t1); clearInterval(t2); clearTimeout(done); };
+  }, []);
+  return (
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--neutral-10)" }}>
+      <div style={{ width: 480, background: "#fff", border: "1px solid var(--border-secondary-enabled)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-large)", padding: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 18 }}>
+          <div style={{ width: 46, height: 46, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--red-10)", borderRadius: "var(--radius-md)" }}>
+            <AppIcon name="snowflake" size={24} color="var(--content-accent-enabled)" />
+          </div>
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "var(--content-primary-a-enabled)" }}>Идёт расчёт снеговых мешков</div>
+            <div style={{ fontSize: 13, color: "var(--content-tertiary-enabled)" }}>Объект «Север-2» · 8 240 м²</div>
+          </div>
+        </div>
+        <div style={{ height: 6, background: "var(--background-tertiary-enabled)", borderRadius: 999, overflow: "hidden" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: "var(--background-accent-enabled)", borderRadius: 999, transition: "width .2s linear" }} />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 20 }}>
+          {CALC_STEPS.map((s, i) => {
+            const done = i < step, cur = i === step;
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                <span style={{ width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 999, background: done ? "var(--green-10)" : cur ? "var(--red-10)" : "var(--background-secondary-a-enabled)" }}>
+                  {done ? <AppIcon name="check" size={14} color="var(--content-system-positive)" />
+                    : cur ? <AppIcon name="loader-circle" size={14} color="var(--content-accent-enabled)" style={{ animation: "tn-spin .7s linear infinite" }} />
+                    : <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--neutral-35)" }} />}
+                </span>
+                <span style={{ fontSize: 14, color: done || cur ? "var(--content-primary-a-enabled)" : "var(--content-tertiary-enabled)" }}>{s}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <style>{`@keyframes tn-spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
+}
+
+const DEMO_UPLOAD = {
+  files: [
+    { name: "Кровля_Север-2.pdf", size: "2,4 МБ", desc: "план кровли", selected: true },
+    { name: "Разрез_парапет.dwg", size: "0,8 МБ", desc: "узел парапета" },
+  ],
+  scale: "1:200",
+  mapAddress: "г. Екатеринбург, Сибирский тракт, 12",
+  mapSelected: true,
+};
+
+const EMPTY_UPLOAD = { files: [], scale: null, mapAddress: "", mapSelected: false };
+
+function App() {
+  const D = window.SNOW_DATA;
+  const STEPS = D.STEPS;
+  const [route, setRoute] = React.useState("projects"); // projects | wizard
+  const [step, setStep] = React.useState(0);
+  const [maxReached, setMax] = React.useState(0);
+  const [calc, setCalc] = React.useState(false);
+  const [showExport, setShowExport] = React.useState(false);
+  const [isNewProject, setIsNewProject] = React.useState(false);
+  const [upload, setUpload] = React.useState(EMPTY_UPLOAD);
+
+  const goStep = (i) => { setStep(i); setMax((m) => Math.max(m, i)); };
+  const openExisting = () => {
+    setIsNewProject(false);
+    setUpload(DEMO_UPLOAD);
+    setRoute("wizard");
+    setStep(0);
+    setMax(STEPS.length - 1);
+  };
+  const openNew = () => {
+    setIsNewProject(true);
+    setUpload(EMPTY_UPLOAD);
+    setRoute("wizard");
+    setStep(0);
+    setMax(0);
+  };
+
+  function addFile(file) {
+    setUpload((u) => ({
+      ...u,
+      files: [...u.files.map((f) => ({ ...f, selected: false })), file],
+      scale: /\.pdf$/i.test(file.name) ? "1:200" : u.scale,
+    }));
+  }
+
+  function selectMap(address) {
+    setUpload((u) => ({ ...u, mapAddress: address, mapSelected: true }));
+  }
+
+  const next = () => {
+    const id = STEPS[step].id;
+    if (id === "climate") { setCalc(true); return; }      // запуск расчёта мешков
+    if (step < STEPS.length - 1) goStep(step + 1);
+  };
+  const back = () => { if (step > 0) goStep(step - 1); };
+
+  // содержимое шага
+  let stepContent = null;
+  if (calc) {
+    stepContent = <Calculating onDone={() => { setCalc(false); goStep(4); }} />;
+  } else {
+    const id = STEPS[step].id;
+    stepContent = {
+      upload: <window.StepUpload isNew={isNewProject} files={upload.files} scale={upload.scale}
+        mapAddress={upload.mapAddress} mapSelected={upload.mapSelected}
+        onFileAdd={addFile} onMapSelect={selectMap} />,
+      geometry: <window.StepGeometry />,
+      obstacles: <window.StepObstacles />,
+      climate: <window.StepClimate />,
+      snowbags: <window.StepSnowbags />,
+      sensors: <window.StepSensors />,
+      result: <window.ResultView onExport={() => setShowExport(true)} />,
+    }[id];
+  }
+
+  // конфигурация нижней кнопки
+  const footerCfg = (() => {
+    const id = STEPS[step].id;
+    if (id === "climate") return { nextLabel: "Рассчитать мешки", nextIcon: "sparkles", nextVariant: "accent", hint: "Расчёт по СП 20.13330.2016" };
+    if (id === "snowbags") return { nextLabel: "Расставить датчики", nextIcon: "arrow-right" };
+    if (id === "sensors") return { nextLabel: "Сформировать схему", nextIcon: "arrow-right", nextVariant: "accent" };
+    if (id === "result") return { nextLabel: "Экспорт документов", nextIcon: "download", nextVariant: "accent", onNext: () => setShowExport(true) };
+    if (id === "geometry") return { nextLabel: "Подтвердить и далее", nextIcon: "arrow-right" };
+    return {};
+  })();
+
+  if (route === "projects") {
+    return (
+      <Frame project={null} onHome={() => setRoute("projects")}>
+        <window.ProjectsView onOpen={openExisting} onNew={openNew} />
+      </Frame>
+    );
+  }
+
+  return (
+    <Frame project={isNewProject ? null : D.PROJECT} onHome={() => setRoute("projects")}>
+      <window.Stepper steps={STEPS} current={step} maxReached={maxReached} onJump={goStep} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>{stepContent}</div>
+      {!calc && (
+        <window.WizardFooter current={step} total={STEPS.length} onBack={back}
+          onNext={footerCfg.onNext || next} nextLabel={footerCfg.nextLabel} nextIcon={footerCfg.nextIcon}
+          nextVariant={footerCfg.nextVariant} hint={footerCfg.hint}
+          onDraft={() => setRoute("projects")} />
+      )}
+      {showExport && <window.ExportDialog onClose={() => setShowExport(false)} />}
+    </Frame>
+  );
+}
+
+function Frame({ project, onHome, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden", background: "var(--neutral-10)" }}>
+      <window.AppHeader project={project} onHome={onHome} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+class Boundary extends React.Component {
+  constructor(p) { super(p); this.state = { err: false }; }
+  static getDerivedStateFromError() { return { err: true }; }
+  componentDidCatch() {}
+  render() { return this.state.err ? null : this.props.children; }
+}
+
+(function boot() {
+  console.log("SNOW-BUILD-v3");
+  var ns = window.TNDesignSystem_7f9df2;
+  if (!ns || !ns.Button || !ns.Icon || !window.AppHeader || !window.ProjectsView) { return setTimeout(boot, 30); }
+  var rootEl = document.getElementById("root");
+  if (!rootEl) return;
+  if (!window.__snowRoot) window.__snowRoot = ReactDOM.createRoot(rootEl);
+  window.__snowRoot.render(<Boundary><App /></Boundary>);
+})();
+
+</script>
+<script>
+(function(){
+  function fix(el){ if(!el.style) return; var mi = el.style.webkitMaskImage || el.style.maskImage || ""; if(mi.indexOf("lucide-static") < 0) return; var m = mi.match(/icons\/([a-z0-9-]+)\.svg/); if(!m) return; var id = "ic_" + m[1].replace(/-/g,"_"); var blob = window.__resources && window.__resources[id]; if(blob){ el.style.webkitMaskImage = 'url("'+blob+'")'; el.style.maskImage = 'url("'+blob+'")'; } }
+  function scan(root){ try{ (root.querySelectorAll ? root.querySelectorAll("span[aria-hidden]") : []).forEach(fix); }catch(e){} }
+  function start(){ scan(document); var obs = new MutationObserver(function(muts){ muts.forEach(function(mu){ if(mu.type === "attributes"){ fix(mu.target); } if(mu.addedNodes){ mu.addedNodes.forEach(function(n){ if(n.nodeType === 1){ fix(n); scan(n); } }); } }); }); obs.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:["style"]}); [120,400,900,1800,3000].forEach(function(t){ setTimeout(function(){ scan(document); }, t); }); }
+  if(document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+})();
+</script>
+</body>
+</html>

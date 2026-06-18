@@ -1,0 +1,33 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Neutral scale" subtitle="22-step neutral ramp — surfaces, text, borders" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { padding: 20px; }
+  .scale { display: grid; grid-template-columns: repeat(11, 1fr); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--neutral-20); }
+  .scale div { height: 88px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 10px; }
+  .lo { color: var(--neutral-70); }
+  .hi { color: #fff; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="scale">
+      <div class="lo" style="background:var(--neutral-5)">5</div>
+      <div class="lo" style="background:var(--neutral-10)">10</div>
+      <div class="lo" style="background:var(--neutral-15)">15</div>
+      <div class="lo" style="background:var(--neutral-20)">20</div>
+      <div class="lo" style="background:var(--neutral-30)">30</div>
+      <div class="lo" style="background:var(--neutral-40)">40</div>
+      <div class="hi" style="background:var(--neutral-50)">50</div>
+      <div class="hi" style="background:var(--neutral-60)">60</div>
+      <div class="hi" style="background:var(--neutral-70)">70</div>
+      <div class="hi" style="background:var(--neutral-85)">85</div>
+      <div class="hi" style="background:var(--neutral-100)">100</div>
+    </div>
+  </div>
+</body>
+</html>

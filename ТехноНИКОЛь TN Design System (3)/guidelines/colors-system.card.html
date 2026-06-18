@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x190" name="System colors" subtitle="Positive / negative / warning / action / neutral" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding: 20px; }
+  .sw { border-radius: var(--radius-md); border: 1px solid var(--neutral-20); overflow: hidden; }
+  .chip { height: 64px; }
+  .meta { padding: 8px 10px; }
+  .meta b { display: block; font-size: 13px; font-weight: 600; color: var(--neutral-100); }
+  .meta code { font-size: 11px; color: var(--neutral-55); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="sw"><div class="chip" style="background:var(--content-system-positive)"></div><div class="meta"><b>Positive</b><code>green-55</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--content-system-negative)"></div><div class="meta"><b>Negative</b><code>red-60</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--content-system-warning)"></div><div class="meta"><b>Warning</b><code>orange-40</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--content-action-enabled)"></div><div class="meta"><b>Action</b><code>blue-55</code></div></div>
+    <div class="sw"><div class="chip" style="background:var(--content-system-neutral)"></div><div class="meta"><b>Neutral</b><code>neutral-65</code></div></div>
+  </div>
+</body>
+</html>

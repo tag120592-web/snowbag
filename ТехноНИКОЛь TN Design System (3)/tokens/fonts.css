@@ -1,0 +1,45 @@
+/* ТехноНИКОЛь — Webfonts
+   Brand face is Proxima Nova (weights 300/400/600/700/800).
+   The original TTFs ship privately with @life_uikit/uikit and are NOT in this
+   project, so we substitute Manrope — a geometric-humanist sans with full
+   Cyrillic coverage and proportions close to Proxima Nova. Swap the @font-face
+   src back to the real Proxima Nova files when available. */
+
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
+
+/* Alias so component code can reference "Proxima Nova" and resolve to the
+   substitute until the real face is dropped in. */
+@font-face {
+  font-family: "Proxima Nova";
+  src: local("Manrope");
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: local("Manrope");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: local("Manrope");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: local("Manrope");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Proxima Nova";
+  src: local("Manrope");
+  font-weight: 800;
+  font-style: normal;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}

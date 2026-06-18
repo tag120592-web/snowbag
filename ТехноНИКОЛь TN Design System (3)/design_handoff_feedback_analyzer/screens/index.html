@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!-- saved from url=(0105)file:///C:/Users/bobri/Downloads/fa-interface/%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81.html -->
+<html lang="ru"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Анализатор обратной связи · интерфейс</title>
+<style>
+  @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap");
+  html,body{margin:0;height:100%;font-family:"Proxima Nova",Manrope,-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{height:100%}
+  iframe.scr{display:none;width:100%;height:100%;border:0}
+  iframe.scr.active{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+<iframe class="scr active" src="./01-start.html"></iframe>
+<iframe class="scr" src="./02-mapping.html"></iframe>
+<iframe class="scr" src="./03-dashboard-reviews.html"></iframe>
+</div>
+<script>
+  var scr=document.querySelectorAll('.scr');
+  function activate(idx){
+    scr.forEach(function(s){s.classList.remove('active')}); scr[idx].classList.add('active');
+  }
+  var FILE_IDX={'01-start.html':0,'02-mapping.html':1,'03-dashboard-reviews.html':2};
+  window.addEventListener('message',function(e){
+    var f=e.data&&e.data.tnNav; if(f==null)return;
+    var idx=FILE_IDX[f]; if(idx==null)return; activate(idx);
+  });
+</script>
+
+</body></html>

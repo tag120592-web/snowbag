@@ -1,0 +1,51 @@
+specification {
+  element actor {
+    style {
+      shape person
+    }
+  }
+
+  element softwareSystem {
+    notation 'Software System'
+  }
+
+  element externalSystem {
+    notation 'External System'
+    style {
+      color muted
+    }
+  }
+
+  element container {
+    notation 'Container'
+  }
+
+  element component {
+    notation 'Component'
+  }
+
+  element database {
+  }
+
+  element storage {
+    notation 'Object Storage'
+    style {
+      shape storage
+    }
+  }
+
+  element queue {
+    style {
+      shape queue
+    }
+  }
+
+  relationship sync
+  relationship async {
+    line dotted
+  }
+
+  tag mvp
+  tag postmvp
+  tag external
+}

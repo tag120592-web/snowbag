@@ -1,0 +1,30 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing scale" subtitle="4px base grid · 2 → 64" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { padding: 20px 24px; display: flex; align-items: flex-end; gap: 16px; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .col i { background: var(--red-20); border: 1px solid var(--red-40); border-radius: 3px; width: 100%; }
+  .col span { font-size: 11px; color: var(--neutral-55); font-family: var(--font-family-mono); }
+  .col { width: 34px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="col"><i style="height:4px"></i><span>4</span></div>
+    <div class="col"><i style="height:8px"></i><span>8</span></div>
+    <div class="col"><i style="height:12px"></i><span>12</span></div>
+    <div class="col"><i style="height:16px"></i><span>16</span></div>
+    <div class="col"><i style="height:20px"></i><span>20</span></div>
+    <div class="col"><i style="height:24px"></i><span>24</span></div>
+    <div class="col"><i style="height:32px"></i><span>32</span></div>
+    <div class="col"><i style="height:40px"></i><span>40</span></div>
+    <div class="col"><i style="height:48px"></i><span>48</span></div>
+    <div class="col"><i style="height:64px"></i><span>64</span></div>
+  </div>
+</body>
+</html>

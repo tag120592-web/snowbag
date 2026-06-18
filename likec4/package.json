@@ -1,0 +1,13 @@
+{
+  "name": "snowbag-architecture",
+  "private": true,
+  "description": "LikeC4 architecture model for Snowbag SaaS",
+  "scripts": {
+    "serve": "likec4 serve",
+    "build": "likec4 build",
+    "export:png": "likec4 export png -o ./diagrams"
+  },
+  "devDependencies": {
+    "likec4": "^1.0.0"
+  }
+}

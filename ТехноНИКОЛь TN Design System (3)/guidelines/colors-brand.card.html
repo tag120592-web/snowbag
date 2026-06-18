@@ -1,0 +1,36 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Brand accent" subtitle="TN red #e11b11 — the single accent, used sparingly" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { display: flex; gap: 16px; padding: 20px; align-items: stretch; }
+  .hero { flex: 0 0 220px; border-radius: var(--radius-lg); background: var(--red-60); color: #fff; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; }
+  .hero b { font-size: 22px; font-weight: 800; }
+  .hero code { font-size: 13px; opacity: .85; }
+  .scale { flex: 1; display: grid; grid-template-columns: repeat(8, 1fr); gap: 0; border-radius: var(--radius-md); overflow: hidden; }
+  .scale div { height: 100%; min-height: 96px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; font-size: 10px; color: #fff; }
+  .lo { color: var(--neutral-80) !important; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <span>Accent</span>
+      <div><b>red-60</b><br /><code>#e11b11</code></div>
+    </div>
+    <div class="scale">
+      <div style="background:var(--red-10)" class="lo">10</div>
+      <div style="background:var(--red-20)" class="lo">20</div>
+      <div style="background:var(--red-30)" class="lo">30</div>
+      <div style="background:var(--red-45)">45</div>
+      <div style="background:var(--red-55)">55</div>
+      <div style="background:var(--red-60)">60</div>
+      <div style="background:var(--red-65)">65</div>
+      <div style="background:var(--red-75)">75</div>
+    </div>
+  </div>
+</body>
+</html>

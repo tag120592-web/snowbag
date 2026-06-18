@@ -1,0 +1,36 @@
+<!-- @dsCard group="Components" viewport="700x150" name="Icon" subtitle="Lucide-backed TNIcon — inherits text color" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; }
+  .wrap { padding: 24px; display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .item span { font-size: 11px; color: var(--neutral-50); font-family: var(--font-family-mono); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+  <div id="root" class="wrap"></div>
+  <script type="text/babel">
+    const { Icon } = window.TNDesignSystem_7f9df2;
+    const set = [
+      ["search", "var(--neutral-65)"], ["file-text", "var(--neutral-65)"],
+      ["shield-check", "var(--content-system-positive)"], ["alert-triangle", "var(--content-system-warning)"],
+      ["circle-alert", "var(--content-system-negative)"], ["sparkles", "var(--content-accent-enabled)"],
+      ["book-open", "var(--content-action-enabled)"], ["settings", "var(--neutral-65)"],
+    ];
+    function Demo() {
+      return set.map(([n, c]) => (
+        <div className="item" key={n}><Icon name={n} size={26} color={c} /><span>{n}</span></div>
+      ));
+    }
+    ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+  </script>
+</body>
+</html>

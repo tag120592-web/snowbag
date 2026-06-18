@@ -1,0 +1,38 @@
+/* ТехноНИКОЛь — Typography tokens
+   Proxima Nova (substituted by Manrope). The TN kit sizes UI text in a
+   compact 11–32px range; weights run Regular(400) / Medium(500) / Semibold(600)
+   / Bold(700) / Extrabold(800). No serif, no display face — one neutral family
+   throughout. */
+
+:root {
+  --font-family-base: "Proxima Nova", "Manrope", -apple-system, "Segoe UI", sans-serif;
+  --font-family-mono: ui-monospace, Menlo, Consolas, monospace;
+
+  /* Weights */
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Type scale (font-size / line-height) — UI ramp */
+  --font-size-caption-sm: 11px;   --line-height-caption-sm: 14px;
+  --font-size-caption: 12px;      --line-height-caption: 16px;
+  --font-size-footnote: 13px;     --line-height-footnote: 18px;
+  --font-size-body: 14px;         --line-height-body: 20px;   /* default UI text */
+  --font-size-body-lg: 16px;      --line-height-body-lg: 22px;
+  --font-size-subtitle: 18px;     --line-height-subtitle: 24px;
+  --font-size-title-sm: 20px;     --line-height-title-sm: 26px;
+  --font-size-title: 24px;        --line-height-title: 30px;
+  --font-size-title-lg: 28px;     --line-height-title-lg: 34px;
+  --font-size-headline: 32px;     --line-height-headline: 40px;
+
+  /* Semantic text roles */
+  --text-display: var(--font-weight-extrabold) var(--font-size-headline) / var(--line-height-headline) var(--font-family-base);
+  --text-title: var(--font-weight-bold) var(--font-size-title) / var(--line-height-title) var(--font-family-base);
+  --text-subtitle: var(--font-weight-semibold) var(--font-size-subtitle) / var(--line-height-subtitle) var(--font-family-base);
+  --text-body: var(--font-weight-regular) var(--font-size-body) / var(--line-height-body) var(--font-family-base);
+  --text-body-strong: var(--font-weight-semibold) var(--font-size-body) / var(--line-height-body) var(--font-family-base);
+  --text-caption: var(--font-weight-regular) var(--font-size-caption) / var(--line-height-caption) var(--font-family-base);
+}

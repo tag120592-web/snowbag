@@ -1,0 +1,52 @@
+include:
+  - https://tn:qk9kruunqgkx3mqn@pipeline-template.tages.dev/tn/build-kaniko.yml
+
+stages:
+  - build
+  - deploy
+
+default:
+  tags:
+    - tn-697
+  interruptible: true
+
+
+deploy-package:
+  stage: deploy
+  image: docker-public.registry.tages.ru/node:latest
+  script:
+    - npm pkg set publishConfig."@life_uikit:registry"="https://${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/"
+    - echo "//${CI_SERVER_HOST}/api/v4/projects/${CI_PROJECT_ID}/packages/npm/:_authToken=${CI_JOB_TOKEN}">.npmrc
+    - export PATH="$PATH:$HOME"
+    - sh collect-icon-names.sh
+    - npm publish
+  only:
+    - tags
+
+build:
+  extends: .build-kaniko-v1
+  script: |
+    build
+  only:
+    - master
+    - /^story/.*$/
+
+deploy:
+  stage: deploy
+  image: curlimages/curl:7.69.1
+  variables:
+    SERVICE: uiKit
+  script: |
+    touch YQLINES
+    echo ".version.$SERVICE=\"$(cat docker-image-full-name)\"" >> YQLINES
+    curl -X POST \
+      -F token=$TOKEN_DEPLOY_TRIGGER \
+      -F ref=main \
+      -F "variables[PROJECT]=$CI_PROJECT_PATH" \
+      -F "variables[BRANCH]=$CI_COMMIT_REF_NAME" \
+      -F "variables[YQLINES]=$(cat YQLINES)"\
+      https://git.tjump.ru/api/v4/projects/$ID_DEPLOY_PROJECT/trigger/pipeline
+    nslookup pipeline-template.tn.tages.dev
+  only:
+    - master
+    - /^story/.*$/

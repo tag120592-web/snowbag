@@ -1,0 +1,43 @@
+/* ТехноНИКОЛь — Spacing, radii, shadows, layout tokens
+   The TN kit uses a 4px base grid; corner radii are generous (8–16px on
+   cards/controls, pill for tags/avatars). Two elevation shadows only. */
+
+:root {
+  /* Spacing — 4px grid */
+  --space-0: 0;
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-10: 10px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;
+  --space-48: 48px;
+  --space-64: 64px;
+
+  /* Corner radii */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;   /* inputs, buttons */
+  --radius-lg: 12px;  /* cards */
+  --radius-xl: 16px;  /* large surfaces, sheets */
+  --radius-2xl: 20px;
+  --radius-pill: 999px;
+
+  /* Control heights (sm/md/lg/xl) */
+  --control-h-sm: 32px;
+  --control-h-md: 40px;
+  --control-h-lg: 48px;
+  --control-h-xl: 56px;
+
+  /* Elevation */
+  --shadow-small: -4px 6px 7px 0 #1e22282b, 0 0 2px 0 #1e222830;
+  --shadow-large: 0 12px 46px 0 #00000019;
+
+  /* Focus ring */
+  --focus-ring: 0 0 0 3px rgba(225, 27, 17, 0.18);
+}

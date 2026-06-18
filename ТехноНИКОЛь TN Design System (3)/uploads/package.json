@@ -1,0 +1,39 @@
+{
+  "name": "@life_uikit/uikit",
+  "version": "6.6.2",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.tn.ru/superapp/superapp/tn-uikit/uikit.git"
+  },
+  "scripts": {
+    "postcompress": "node update-icon-names.js",
+    "update-icon-names": "node update-icon-names.js",
+    "story:dev": "histoire dev",
+    "story:build": "histoire build"
+  },
+  "bugs": {
+    "url": "https://gitlab.tn.ru/superapp/superapp/tn-uikit/uikit/-/issues"
+  },
+  "author": "tages_alexander.nilov",
+  "license": "ISC",
+  "dependencies": {
+    "@floating-ui/vue": "^1.0.6",
+    "click-outside-vue3": "^4.0.1",
+    "maska": "^3.0.0",
+    "overlayscrollbars": "^2.11.5",
+    "overlayscrollbars-vue": "^0.5.9",
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6",
+    "vue3-touch-events": "^4.1.0"
+  },
+  "devDependencies": {
+    "@histoire/plugin-vue": "^0.17.17",
+    "@nicco.io/markdown-it-import": "1.0.1",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "histoire": "0.17.17"
+  },
+  "optionalDependencies": {
+    "typescript": "^5.6.2"
+  }
+}

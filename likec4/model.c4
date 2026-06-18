@@ -1,0 +1,243 @@
+model {
+  engineer = actor 'Инженер / проектировщик' {
+    #mvp
+    description '''
+      Основной пользователь MVP.
+      Загружает чертежи, верифицирует геометрию кровли,
+      запускает расчёт снеговых мешков и экспортирует документацию.
+    '''
+  }
+
+  partner = actor 'Партнёр' {
+    #mvp
+    description 'Технический специалист партнёра ТехноНИКОЛЬ.'
+  }
+
+  buildingOwner = actor 'Владелец здания' {
+    #postmvp
+    description 'Вторичная аудитория — просмотр результатов и отчётов.'
+  }
+
+  yandexMaps = externalSystem 'Яндекс.Карты API' {
+    #external #mvp
+    technology 'JavaScript API, Geocoder'
+    description 'Геокодинг адреса, выбор объекта на карте, ориентация здания.'
+  }
+
+  corporateSSO = externalSystem 'Корпоративный SSO' {
+    #external #mvp
+    technology 'SAML 2.0 / OIDC'
+    description 'Единый вход сотрудников и авторизованных партнёров.'
+  }
+
+  climateRef = externalSystem 'Справочник климатических районов' {
+    #external #mvp
+    description '''
+      Снеговые и ветровые районы РФ по СП 20.13330.2016.
+      Роза ветров по региону.
+    '''
+  }
+
+  crm = externalSystem 'CRM' {
+    #external #postmvp
+    description 'Интеграция на этапе эксплуатации (этап 5 дорожной карты).'
+  }
+
+  snowbag = softwareSystem 'Снеговые мешки' {
+    #mvp
+  description '''
+      SaaS для проектирования и анализа систем мониторинга
+      снеговой нагрузки на плоских кровлях.
+      Цель MVP: подготовка проекта ≤ 10 минут.
+    '''
+
+    webApp = container 'Web-приложение' {
+      #mvp
+      technology 'Vue 3, Vite, Three.js'
+      description '''
+        Загрузка файлов, редактор схемы кровли, 2D/3D визуализация,
+        Яндекс.Карты, экспорт документов.
+      '''
+
+      fileUpload = component 'Модуль загрузки' {
+        description 'PDF, DWG, DXF, JPG, PNG; масштаб, поворот, привязка масштаба.'
+      }
+
+      roofEditor = component 'Редактор кровли' {
+        description 'Ручная и автоматическая корректировка контура, препятствий, ориентации.'
+      }
+
+      schemeViewer = component 'Визуализация' {
+        technology 'Canvas / Three.js'
+        description '2D-схема и 3D-карта (тепловая карта) снеговых зон и датчиков.'
+      }
+
+      mapsWidget = component 'Виджет карт' {
+        description 'Адрес, точка на карте, север, роза ветров.'
+      }
+
+      exportUI = component 'Экспорт UI' {
+        description 'Запрос PDF, Excel, JSON из интерфейса.'
+      }
+
+      fileUpload -> roofEditor 'передаёт геометрию'
+      roofEditor -> schemeViewer 'отображает результат'
+      mapsWidget -> roofEditor 'координаты и ориентация'
+      schemeViewer -> exportUI 'данные схемы'
+    }
+
+    api = container 'API-сервер' {
+      #mvp
+      technology 'Go, REST'
+      description 'Бизнес-логика, оркестрация расчётов, интеграции, аудит действий.'
+
+      restAPI = component 'REST API' {
+        technology 'chi / echo'
+        description 'Проекты, объекты, геометрия, расчёты, экспорт, health.'
+      }
+
+      auth = component 'Авторизация' {
+        description 'SSO, сессии, журнал действий пользователей.'
+      }
+
+      projectService = component 'Сервис проектов' {
+        description 'CRUD объектов и проектов, жизненный цикл расчёта.'
+      }
+
+      fileService = component 'Файловый сервис' {
+        description 'Presigned upload/download, метаданные вложений.'
+      }
+
+      geoEngine = component 'Геометрический движок' {
+        technology 'go-geom, GEOS, GDAL'
+        description '''
+          Контуры, полигоны, расстояния, пересечения.
+          Автовыделение кровли и препятствий.
+        '''
+      }
+
+      analyticsEngine = component 'Аналитический движок' {
+        description '''
+          Зоны снегонакопления по СП 20.13330.2016 (изм. 6).
+          Расстановка датчиков по методике компании.
+        '''
+      }
+
+      climateService = component 'Климатический сервис' {
+        description 'Определение снегового/ветрового района по адресу.'
+      }
+
+      exportService = component 'Сервис экспорта' {
+        technology 'gofpdf, excelize'
+        description 'Генерация PDF-схемы, Excel-отчёта, JSON для интеграций.'
+      }
+
+      restAPI -> auth 'проверяет токен'
+      restAPI -> projectService 'управляет проектами'
+      restAPI -> fileService 'загрузка файлов'
+      restAPI -> geoEngine 'геометрия кровли'
+      restAPI -> analyticsEngine 'расчёт мешков и датчиков'
+      restAPI -> exportService 'формирует документы'
+      analyticsEngine -> climateService 'районы и роза ветров'
+      geoEngine -> analyticsEngine 'контур и препятствия'
+    }
+
+    worker = container 'Воркер обработки' {
+      #mvp
+      technology 'Go'
+      description 'Асинхронная обработка тяжёлых файлов (DWG, PDF, растры).'
+
+      jobConsumer = component 'Потребитель задач' {
+        technology 'Redis Streams / NATS'
+      }
+
+      dxfParser = component 'Парсер DXF/DWG' {
+        technology 'dxf, ODA Converter'
+        description 'Извлечение векторной геометрии из чертежей.'
+      }
+
+      rasterPipeline = component 'CV-пайплайн' {
+        technology 'OpenCV, GDAL'
+        description 'Автообводка кровли с PDF/JPG/PNG (цель KPI ≥ 85%).'
+      }
+
+      jobConsumer -> dxfParser 'векторные файлы'
+      jobConsumer -> rasterPipeline 'растровые файлы'
+    }
+
+    postgis = database 'PostgreSQL + PostGIS' {
+      #mvp
+      technology 'PostgreSQL 16, PostGIS 3'
+      description 'Объекты, проекты, геометрия кровель, датчики, аналитика, аудит.'
+    }
+
+    redis = queue 'Redis' {
+      #mvp
+      technology 'Redis 7'
+      description 'Кэш, сессии, очередь задач обработки файлов.'
+    }
+
+    objectStorage = storage 'S3-хранилище' {
+      #mvp
+      technology 'MinIO / Yandex Object Storage'
+      description 'Исходные чертежи, промежуточные растры, экспортные документы.'
+    }
+
+    webApp -> api 'HTTPS / JSON' {
+      technology 'REST'
+    }
+
+    api -> postgis 'читает и пишет' {
+      technology 'SQL'
+    }
+
+    api -> objectStorage 'файлы' {
+      technology 'S3 API'
+    }
+
+    api -> redis 'кэш, сессии' {
+      technology 'Redis protocol'
+    }
+
+    api -[async]-> worker 'ставит задачу' 'Асинхронная обработка DWG/PDF' 'Redis Streams'
+
+    worker -> objectStorage 'читает исходники' {
+      technology 'S3 API'
+    }
+
+    worker -> postgis 'сохраняет геометрию' {
+      technology 'SQL'
+    }
+
+    worker -> redis 'статус задачи' {
+      technology 'Redis protocol'
+    }
+
+    webApp -> yandexMaps 'карта, геокодинг' {
+      #external
+      technology 'HTTPS'
+    }
+
+    api -> yandexMaps 'геокодинг (сервер)' {
+      #external
+      technology 'HTTPS'
+    }
+
+    auth -> corporateSSO 'аутентификация' {
+      #external
+      technology 'OIDC / SAML'
+    }
+
+    climateService -> climateRef 'справочные данные' {
+      #external
+    }
+
+    api -[async]-> crm 'синхронизация проектов' 'Этап эксплуатации' 'REST'
+  }
+
+  engineer -> snowbag 'проектирует систему мониторинга'
+  partner -> snowbag 'анализирует объекты'
+  buildingOwner -> snowbag 'просматривает отчёты' {
+    #postmvp
+  }
+}

@@ -1,0 +1,28 @@
+<!-- @dsCard group="Type" viewport="700x230" name="Type scale" subtitle="Proxima Nova (subst. Manrope) — UI ramp 11→32px" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: #fff; color: var(--neutral-100); }
+  .wrap { padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: baseline; gap: 16px; }
+  .row .lab { flex: 0 0 132px; font-size: 11px; color: var(--neutral-50); font-family: var(--font-family-mono); }
+  .headline { font-size: 32px; line-height: 40px; font-weight: 800; white-space: nowrap; }
+  .title { font-size: 24px; line-height: 30px; font-weight: 700; white-space: nowrap; }
+  .subtitle { font-size: 18px; line-height: 24px; font-weight: 600; white-space: nowrap; }
+  .body { font-size: 14px; line-height: 20px; font-weight: 400; }
+  .caption { font-size: 12px; line-height: 16px; font-weight: 400; color: var(--neutral-60); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="row"><span class="lab">Headline · 800</span><span class="headline">Аудитор знаний</span></div>
+    <div class="row"><span class="lab">Title · 700</span><span class="title">Результаты проверки</span></div>
+    <div class="row"><span class="lab">Subtitle · 600</span><span class="subtitle">Соответствие нормативам</span></div>
+    <div class="row"><span class="lab">Body · 400</span><span class="body">Документ проверен по 14 источникам базы знаний.</span></div>
+    <div class="row"><span class="lab">Caption · 400</span><span class="caption">Обновлено 5 минут назад · ГОСТ 30547-97</span></div>
+  </div>
+</body>
+</html>

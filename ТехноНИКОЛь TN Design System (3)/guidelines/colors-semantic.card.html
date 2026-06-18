@@ -1,0 +1,49 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Semantic surfaces & text" subtitle="content / background / border tokens in use" -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { margin: 0; font-family: var(--font-family-base); background: var(--background-secondary-a-enabled); }
+  .wrap { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .panel { background: var(--background-primary-a-enabled); border: 1px solid var(--border-secondary-enabled); border-radius: var(--radius-lg); padding: 14px; }
+  .t1 { font-size: 15px; font-weight: 600; color: var(--content-primary-a-enabled); }
+  .t2 { font-size: 13px; color: var(--content-secondary-enabled); margin-top: 2px; }
+  .t3 { font-size: 12px; color: var(--content-tertiary-enabled); margin-top: 2px; }
+  .tok { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .tok span { font-size: 11px; color: var(--content-tertiary-enabled); font-family: var(--font-family-mono); }
+  .bar { display: flex; gap: 6px; margin-top: 10px; }
+  .bar i { width: 28px; height: 28px; border-radius: var(--radius-sm); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="t1">Primary text</div>
+      <div class="t2">Secondary supporting copy</div>
+      <div class="t3">Tertiary / placeholder hint</div>
+      <div class="tok">
+        <span>--content-primary-a-enabled</span>
+        <span>--content-secondary-enabled</span>
+        <span>--content-tertiary-enabled</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="t1">Surfaces & borders</div>
+      <div class="bar">
+        <i style="background:var(--background-primary-a-enabled);border:1px solid var(--border-secondary-enabled)"></i>
+        <i style="background:var(--background-secondary-a-enabled)"></i>
+        <i style="background:var(--background-tertiary-enabled)"></i>
+        <i style="background:var(--background-primary-b-enabled)"></i>
+        <i style="background:var(--background-accent-enabled)"></i>
+      </div>
+      <div class="tok">
+        <span>--background-primary / secondary / tertiary</span>
+        <span>--background-primary-b · --background-accent</span>
+        <span>--border-secondary-enabled</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
