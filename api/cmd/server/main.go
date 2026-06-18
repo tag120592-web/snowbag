@@ -31,6 +31,9 @@ func main() {
 	if err := store.EnsureMigrations(ctx, db.Pool()); err != nil {
 		log.Printf("migrations warning: %v", err)
 	}
+	if err := store.EnsureThermalSchema(ctx, db.Pool()); err != nil {
+		log.Printf("thermal migrations warning: %v", err)
+	}
 
 	var s3 *storage.S3
 	s3client, err := storage.NewS3(cfg)
