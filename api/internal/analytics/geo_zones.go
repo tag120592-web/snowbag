@@ -175,7 +175,7 @@ func pointInGeoRing(lon, lat float64, ring [][]float64) bool {
 	return inside
 }
 
-func ApplyGeoRegions(res *ClimateLookupResult, lat, lon float64) bool {
+func ApplyGeoRegions(res *ClimateLookupResult, city string, lat, lon float64) bool {
 	applied := false
 	if sr, ok := LookupSnowRegion(lat, lon); ok {
 		res.SnowRegion = sr
@@ -185,8 +185,8 @@ func ApplyGeoRegions(res *ClimateLookupResult, lat, lon float64) bool {
 	if wr, ok := LookupWindRegion(lat, lon); ok {
 		res.WindRegion = wr
 		res.W0 = windPressure(wr)
-		// Keep settlement-specific SNiP wind rose when city was matched; only fall back to regional rose otherwise.
-		if res.MatchQuality == "default" || res.MatchedCity == "" {
+		settlement, settlementOk := findSettlement(city)
+		if !(settlementOk && len(settlement.JanuaryRose) == 8) {
 			loadClimateDB()
 			if r, ok := climateDB.WindRosesByRegion[wr]; ok && len(r) > 0 {
 				res.WindRose = cloneRose(r)

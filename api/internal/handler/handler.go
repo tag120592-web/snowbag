@@ -100,7 +100,7 @@ func (h *Handler) lookupClimate(w http.ResponseWriter, r *http.Request) {
 		lat, latErr := strconv.ParseFloat(latStr, 64)
 		lon, lonErr := strconv.ParseFloat(lonStr, 64)
 		if latErr == nil && lonErr == nil {
-			if analytics.ApplyGeoRegions(&res, lat, lon) {
+			if analytics.ApplyGeoRegions(&res, city, lat, lon) {
 				res.RegionSource = "geo"
 			}
 		}
@@ -172,9 +172,12 @@ func (h *Handler) loadProjectWithUnderlay(r *http.Request, id uuid.UUID) (*model
 
 func (h *Handler) createProject(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-		writeError(w, http.StatusBadRequest, "name is required")
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid body")
 		return
+	}
+	if req.Name == "" {
+		req.Name = "Новый объект"
 	}
 	p, err := h.store.CreateProject(r.Context(), req)
 	if err != nil {

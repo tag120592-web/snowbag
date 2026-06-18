@@ -166,8 +166,11 @@ func prevailingWind(rose []model.WindRose) model.WindRose {
 	return best
 }
 
+// windPressure — нормативное ветровое давление w₀, кПа (СП 20.13330.2016, табл. 11.1).
 func windPressure(region string) float64 {
 	switch region {
+	case "Ia":
+		return 0.17
 	case "I":
 		return 0.23
 	case "II":

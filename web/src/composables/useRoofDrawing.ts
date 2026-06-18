@@ -61,19 +61,73 @@ export function formatLengthM(px: number, pxPerM = PX_PER_M): string {
   return `${Math.round(m).toLocaleString('ru-RU')} м`
 }
 
+/** Edge count for roof contour (closed polygon, matches canvas dimension labels). */
 export function roofSideCount(points: number[][]): number {
-  return points.length >= 3 ? points.length : 0
+  return elementSideCount(points, true)
+}
+
+export function roofEdgeSegments(points: number[][]): Array<[number[], number[]]> {
+  const count = roofSideCount(points)
+  if (count < 1 || points.length < 2) return []
+  const segments: Array<[number[], number[]]> = []
+  for (let i = 0; i < count; i += 1) {
+    segments.push([points[i], points[(i + 1) % points.length]])
+  }
+  return segments
 }
 
 export function sideLabel(index: number): string {
   return `Сторона ${index + 1}`
 }
 
+export function isPolylineClosed(points: number[][]): boolean {
+  if (points.length < 3) return false
+  const [x0, y0] = points[0]
+  const [xn, yn] = points[points.length - 1]
+  return Math.hypot(xn - x0, yn - y0) <= SNAP
+}
+
 /** Closed polygon: one side per vertex; open polyline: one side per segment. */
 export function elementSideCount(points: number[][], closed = true): number {
   if (points.length < 2) return 0
-  if (closed) return points.length >= 3 ? points.length : 0
+  if (closed) {
+    if (points.length < 3) return 0
+    return isPolylineClosed(points) ? points.length - 1 : points.length
+  }
   return points.length - 1
+}
+
+/** Edge count for polyline element outlines (matches canvas labels). */
+export function polylineEdgeCount(points: number[][]): number {
+  if (points.length < 2) return 0
+  if (points.length === 2) return 1
+  return elementSideCount(points, true)
+}
+
+export function obstacleSideCount(o: Obstacle): number {
+  if (o.shape === 'rect' && o.w && o.h) return 4
+  if (o.shape === 'polyline' && o.points?.length) return polylineEdgeCount(o.points)
+  return 0
+}
+
+export function polylineWallSegments(points: number[][]): Array<[number[], number[]]> {
+  if (points.length < 2) return []
+  const segments: Array<[number[], number[]]> = []
+  for (let i = 0; i < points.length - 1; i += 1) {
+    segments.push([points[i], points[i + 1]])
+  }
+  if (points.length >= 3 && !isPolylineClosed(points)) {
+    segments.push([points[points.length - 1], points[0]])
+  }
+  return segments
+}
+
+export function rectSidePoints(o: Obstacle): number[][] {
+  const x = o.x ?? 0
+  const y = o.y ?? 0
+  const w = o.w ?? 0
+  const h = o.h ?? 0
+  return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]
 }
 
 /** Constrain pointer to horizontal or vertical axis from anchor. */
@@ -202,4 +256,36 @@ export function parseParapetMm(value: string | undefined): number {
 
 export function formatParapetMm(mm: number): string {
   return `${Math.round(mm)} мм`
+}
+
+const MIN_BAG_PX = 2 * PX_PER_M
+
+export function bagPolyBBox(poly: number[][]): { x: number; y: number; w: number; h: number } {
+  const xs = poly.map((p) => p[0])
+  const ys = poly.map((p) => p[1])
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
+}
+
+export function bboxToBagPoly(x: number, y: number, w: number, h: number): number[][] {
+  return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]
+}
+
+export function resizeBagPoly(
+  poly: number[][],
+  corner: number,
+  pointer: [number, number],
+  minPx = MIN_BAG_PX,
+): number[][] {
+  const { x, y, w, h } = bagPolyBBox(poly)
+  const resized = resizeRect(
+    { id: '', shape: 'rect', x, y, w, h },
+    corner,
+    pointer,
+    minPx,
+  )
+  return bboxToBagPoly(resized.x ?? 0, resized.y ?? 0, resized.w ?? minPx, resized.h ?? minPx)
 }

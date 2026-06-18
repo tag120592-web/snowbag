@@ -79,8 +79,8 @@ async function newProject() {
   try {
     const p = await createProject({
       name: 'Новый объект',
-      city: 'Екатеринбург',
-      address: 'Укажите адрес объекта',
+      city: '',
+      address: '',
     })
     await router.push({ name: 'wizard', params: { id: p.id }, query: { new: '1' } })
   } catch (e) {
