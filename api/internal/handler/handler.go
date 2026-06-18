@@ -56,6 +56,7 @@ func (h *Handler) Routes() http.Handler {
 		r.Get("/projects/{id}/calculations", h.listCalculations)
 		r.Get("/projects/{id}/calculations/{runId}", h.getCalculationRun)
 		r.Post("/projects/{id}/recalculate", h.recalculate)
+		r.Post("/projects/{id}/thermal", h.thermal)
 		r.Post("/projects/{id}/files", h.uploadFile)
 		r.Get("/projects/{id}/underlay", h.getUnderlay)
 		r.Get("/projects/{id}/export", h.export)

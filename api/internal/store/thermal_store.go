@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/technonicol/snowbag/api/internal/model"
 )
 
 // EnsureThermalSchema создаёт таблицы модуля теплотехники/влагонакопления.
@@ -74,5 +76,67 @@ func EnsureThermalSchema(ctx context.Context, pool *pgxpool.Pool) error {
 			('demo-sys-standart', 5, 'demo-proflist',   'Несущее основание',          0.8, FALSE)
 		ON CONFLICT (system_ekn, ord) DO NOTHING;
 	`)
+	return err
+}
+
+// GetThermalSystem загружает систему кровли и её состав (слои + материалы)
+// по ЕКН или слагу. Структура «под ПИМ»: позже источником станет ПИМ.
+func (s *Store) GetThermalSystem(ctx context.Context, eknOrSlug string) (model.ThermalSystem, error) {
+	var sys model.ThermalSystem
+	err := s.pool.QueryRow(ctx,
+		`SELECT ekn, slug, name, note FROM thermal_systems WHERE ekn = $1 OR slug = $1`,
+		eknOrSlug,
+	).Scan(&sys.EKN, &sys.Slug, &sys.Name, &sys.Note)
+	if err != nil {
+		return sys, err
+	}
+
+	rows, err := s.pool.Query(ctx,
+		`SELECT l.role, l.default_thickness_mm, l.is_insulant,
+		        m.ekn, m.name, m.lambda, m.mu, m.density, m.delta_w, m.source
+		 FROM thermal_system_layers l
+		 JOIN thermal_materials m ON m.ekn = l.material_ekn
+		 WHERE l.system_ekn = $1
+		 ORDER BY l.ord`, sys.EKN)
+	if err != nil {
+		return sys, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var l model.Layer
+		var m model.Material
+		var source string
+		if err := rows.Scan(&l.Role, &l.ThicknessMM, &l.IsInsulant,
+			&m.EKN, &m.Name, &m.Lambda, &m.Mu, &m.Density, &m.DeltaW, &source); err != nil {
+			return sys, err
+		}
+		m.Source = model.MaterialSource(source)
+		l.Material = m
+		sys.Layers = append(sys.Layers, l)
+	}
+	return sys, rows.Err()
+}
+
+// SaveThermalCalculation сохраняет вход и результаты теплотехнического расчёта.
+func (s *Store) SaveThermalCalculation(ctx context.Context, c model.ThermalCalculation) error {
+	input, err := json.Marshal(c.Input)
+	if err != nil {
+		return err
+	}
+	var thermal, vapor []byte
+	if c.Thermal != nil {
+		if thermal, err = json.Marshal(c.Thermal); err != nil {
+			return err
+		}
+	}
+	if c.Vapor != nil {
+		if vapor, err = json.Marshal(c.Vapor); err != nil {
+			return err
+		}
+	}
+	_, err = s.pool.Exec(ctx,
+		`INSERT INTO thermal_calculations (id, project_id, input, thermal_result, vapor_result)
+		 VALUES ($1, $2, $3, $4, $5)`,
+		c.ID, c.ProjectID, input, thermal, vapor)
 	return err
 }

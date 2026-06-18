@@ -102,6 +102,7 @@ func confirmedHetero(h []model.Heterogeneity) []model.Heterogeneity {
 	var out []model.Heterogeneity
 	for _, x := range h {
 		if x.Status == model.HeteroConfirmed {
+			ApplyCoefficients(&x) // подставить ψ/χ и тип по узлу СП 230, если не заданы
 			out = append(out, x)
 		}
 	}

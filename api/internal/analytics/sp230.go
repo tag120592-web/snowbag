@@ -90,6 +90,12 @@ func ApplyCoefficients(h *model.Heterogeneity) {
 	if !ok {
 		return
 	}
+	if h.Kind == "" {
+		h.Kind = node.kind
+	}
+	if h.Type == "" {
+		h.Type = node.title
+	}
 	switch node.kind {
 	case model.HeteroLinear:
 		if h.Psi == 0 {
