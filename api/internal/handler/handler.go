@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -91,12 +92,26 @@ func (h *Handler) lookupClimate(w http.ResponseWriter, r *http.Request) {
 	snow := r.URL.Query().Get("snowRegion")
 	wind := r.URL.Query().Get("windRegion")
 	res := analytics.LookupClimateFromSNiP(city, snow, wind)
+
+	latStr := r.URL.Query().Get("lat")
+	lonStr := r.URL.Query().Get("lon")
+	if latStr != "" && lonStr != "" && snow == "" && wind == "" {
+		lat, latErr := strconv.ParseFloat(latStr, 64)
+		lon, lonErr := strconv.ParseFloat(lonStr, 64)
+		if latErr == nil && lonErr == nil {
+			if analytics.ApplyGeoRegions(&res, lat, lon) {
+				res.RegionSource = "geo"
+			}
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]any{
 		"norm":           res.Norm,
 		"month":          res.Month,
 		"monthLabel":     res.MonthLabel,
 		"matchedCity":    res.MatchedCity,
 		"matchQuality":   res.MatchQuality,
+		"regionSource":   res.RegionSource,
 		"snowRegion":     res.SnowRegion,
 		"windRegion":     res.WindRegion,
 		"sg":             res.Sg,
@@ -250,8 +265,12 @@ func (h *Handler) calculate(w http.ResponseWriter, r *http.Request) {
 		windRegion = project.WindRegion
 	}
 	northDeg := req.NorthDeg
-	if northDeg == 0 {
+	if northDeg == 0 && project.NorthDeg != 0 {
 		northDeg = project.NorthDeg
+	}
+	parapetMm := req.ParapetMm
+	if parapetMm <= 0 {
+		parapetMm = analytics.ParseParapetMm(project.Parapet)
 	}
 
 	result := analytics.Calculate(model.CalculateInput{
@@ -259,6 +278,9 @@ func (h *Handler) calculate(w http.ResponseWriter, r *http.Request) {
 		SnowRegion: snowRegion,
 		WindRegion: windRegion,
 		NorthDeg:   northDeg,
+		ParapetMm:  parapetMm,
+		Ce:         req.Ce,
+		Ct:         req.Ct,
 		Geometry:   geom,
 		Sensors:    req.Sensors,
 	})
@@ -346,6 +368,7 @@ func (h *Handler) recalculate(w http.ResponseWriter, r *http.Request) {
 		SnowRegion: project.SnowRegion,
 		WindRegion: project.WindRegion,
 		NorthDeg:   project.NorthDeg,
+		ParapetMm:  analytics.ParseParapetMm(project.Parapet),
 		Geometry:   geom,
 	})
 

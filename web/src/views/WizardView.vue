@@ -17,9 +17,11 @@ import {
   type ClimateLookupResult,
 } from '@/api/client'
 import WindRose from '@/components/WindRose.vue'
+import YandexMapPane from '@/components/YandexMapPane.vue'
 import {
   DEMO_GEOMETRY,
-  ELEMENT_TYPES,
+  DRAW_TOOLS,
+  DEFAULT_PARAPET_M,
   EMPTY_GEOMETRY,
   STEPS,
   type CalculationData,
@@ -31,7 +33,15 @@ import {
   type Sensor,
 } from '@/types'
 import type { DrawSession, EditTarget } from '@/composables/useRoofDrawing'
-import { formatParapetMm, parseParapetMm } from '@/composables/useRoofDrawing'
+import {
+  closedPolylineLengthPx,
+  formatLengthM,
+  formatParapetMm,
+  parseParapetMm,
+  roofSideCount,
+  sideLabel,
+} from '@/composables/useRoofDrawing'
+import { parseCityFromAddress } from '@/utils/address'
 import { parseUnderlayPageFromName } from '@/utils/pdfPage'
 import { inferUnderlayMime, isDwgMime } from '@/utils/underlayMime'
 
@@ -56,7 +66,11 @@ const error = ref('')
 const view3d = ref(false)
 const underlayUrl = ref('')
 const hasUnderlay = ref(false)
-const showUnderlay = ref(false)
+const showUnderlay = ref(true)
+const primarySource = ref<'file' | 'map' | null>(null)
+const orthogonalMode = ref(false)
+const roofExpanded = ref(false)
+const roofName = ref('Контур кровли')
 const previewUnavailable = ref('')
 const underlayMimeType = ref('')
 const underlayPage = ref<number | null>(null)
@@ -66,11 +80,13 @@ const pdfPickerFile = ref<File | null>(null)
 const editTarget = ref<EditTarget | null>(null)
 const drawSession = ref<DrawSession | null>(null)
 const addDialogOpen = ref(false)
-const pickedKind = ref<'element' | 'roof' | 'walkway' | null>(null)
-const pickedElement = ref<(typeof ELEMENT_TYPES)[number] | null>(null)
+const pickedTool = ref<(typeof DRAW_TOOLS)[number] | null>(null)
+const elementDraftName = ref('')
+const elementDraftHeight = ref(1)
 const parapetMm = ref(600)
 const climatePreview = ref<ClimateLookupResult | null>(null)
 const climateLoading = ref(false)
+let skipClimateWatch = false
 
 const snowRegion = ref('III')
 const windRegion = ref('II')
@@ -133,9 +149,12 @@ function applyProjectMeta() {
       ...project.value.geometry,
       obstacles: [...(project.value.geometry.obstacles ?? [])],
       areaM2: project.value.geometry.areaM2 || project.value.areaM2 || DEMO_GEOMETRY.areaM2,
+      walkway: undefined,
     }
+    roofName.value = project.value.geometry.roofName ?? 'Контур кровли'
   } else {
     geometry.value = { ...EMPTY_GEOMETRY, obstacles: [] }
+    roofName.value = 'Контур кровли'
   }
   const underlayName = project.value.underlayName || 'План кровли'
   const resolvedMime = inferUnderlayMime(underlayName, project.value.underlayMimeType)
@@ -161,6 +180,11 @@ function applyProjectMeta() {
   mapSelected.value =
     (!!project.value.address && project.value.address !== 'Укажите адрес объекта')
     || (mapLat.value != null && mapLon.value != null)
+  if (hasUnderlay.value) {
+    primarySource.value = 'file'
+  } else if (mapSelected.value) {
+    primarySource.value = 'map'
+  }
   snowRegion.value = project.value.snowRegion || 'III'
   windRegion.value = project.value.windRegion || 'II'
   northDeg.value = project.value.northDeg ?? -18
@@ -186,16 +210,53 @@ function applyRunSnapshot(run: CalculationRunSnapshot) {
 
 watch(() => project.value?.city, async (city) => {
   if (!city) return
-  await refreshClimate()
+  if (STEPS[step.value]?.id === 'climate') {
+    await resolveClimateFromCoords()
+  }
 })
 
 watch([snowRegion, windRegion], () => {
+  if (skipClimateWatch) return
   if (STEPS[step.value]?.id === 'climate') void refreshClimate()
 })
 
-watch(step, (i) => {
-  if (STEPS[i]?.id === 'climate') void refreshClimate()
+watch(step, async (i) => {
+  if (STEPS[i]?.id === 'climate') {
+    const city = parseCityFromAddress(mapAddress.value || project.value?.address || '')
+    if (city && projectId.value && city !== project.value?.city && !archiveView.value) {
+      try {
+        project.value = await updateProject(projectId.value, { city })
+      } catch { /* ignore */ }
+    }
+    void resolveClimateFromCoords()
+  }
 })
+
+async function resolveClimateFromCoords() {
+  const city = project.value?.city
+  if (!city) {
+    climatePreview.value = null
+    return
+  }
+  const lat = mapLat.value ?? project.value?.lat ?? null
+  const lon = mapLon.value ?? project.value?.lon ?? null
+  if (lat == null || lon == null) {
+    await refreshClimate()
+    return
+  }
+  climateLoading.value = true
+  try {
+    climatePreview.value = await lookupClimate(city, undefined, undefined, { lat, lon })
+    skipClimateWatch = true
+    snowRegion.value = climatePreview.value.snowRegion
+    windRegion.value = climatePreview.value.windRegion
+    skipClimateWatch = false
+  } catch {
+    climatePreview.value = null
+  } finally {
+    climateLoading.value = false
+  }
+}
 
 async function refreshClimate() {
   const city = project.value?.city
@@ -235,6 +296,13 @@ async function saveDraft() {
   if (!projectId.value || archiveView.value) return
   saving.value = true
   try {
+    const sideParapets = ensureSideParapets()
+    geometry.value = {
+      ...geometry.value,
+      roofName: roofName.value,
+      sideParapets,
+      walkway: undefined,
+    }
     project.value = await updateProject(projectId.value, {
       geometry: geometry.value,
       northDeg: northDeg.value,
@@ -244,6 +312,7 @@ async function saveDraft() {
       address: mapAddress.value || project.value?.address,
       lat: mapLat.value ?? undefined,
       lon: mapLon.value ?? undefined,
+      city: project.value?.city,
       parapet: formatParapetMm(parapetMm.value),
       calculation: calculation.value ?? undefined,
       status: 'draft',
@@ -262,7 +331,9 @@ async function next() {
     await saveDraft()
   }
   if (id === 'climate') {
-    await runCalculate()
+    await saveDraft()
+    const ok = await runCalculate()
+    if (!ok && step.value < STEPS.length - 1) goStep(3)
     return
   }
   if (step.value < STEPS.length - 1) goStep(step.value + 1)
@@ -272,8 +343,8 @@ function back() {
   if (step.value > 0) goStep(step.value - 1)
 }
 
-async function runCalculate() {
-  if (!projectId.value) return
+async function runCalculate(): Promise<boolean> {
+  if (!projectId.value) return false
   calculating.value = true
   calcProgress.value = 5
   const timer = setInterval(() => {
@@ -285,14 +356,17 @@ async function runCalculate() {
       northDeg: northDeg.value,
       snowRegion: snowRegion.value,
       windRegion: windRegion.value,
+      parapetMm: parapetMm.value,
       geometry: geometry.value,
       sensors: sensors?.length ? sensors : undefined,
     })
     calculation.value = res.calculation
     project.value = res.project
     goStep(3)
+    return true
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Ошибка расчёта'
+    return false
   } finally {
     clearInterval(timer)
     calculating.value = false
@@ -339,11 +413,11 @@ async function uploadUnderlayFile(file: File, meta?: { page?: number }) {
     await uploadProjectFile(projectId.value, file)
     if (isDwg) {
       hasUnderlay.value = false
-      underlayUrl.value = ''
-      underlayPage.value = null
       previewUnavailable.value = 'Превью для DWG/DXF недоступно. Файл сохранён — конвертация будет в следующей версии.'
     } else {
       hasUnderlay.value = true
+      primarySource.value = 'file'
+      showUnderlay.value = true
       underlayUrl.value = projectUnderlayUrl(projectId.value)
       underlayVersion.value += 1
     }
@@ -401,12 +475,15 @@ async function onMapSelect(payload: MapSelectPayload) {
   mapLat.value = payload.lat
   mapLon.value = payload.lon
   mapSelected.value = true
+  primarySource.value = 'map'
+  const city = parseCityFromAddress(payload.address)
   if (!projectId.value) return
   try {
     project.value = await updateProject(projectId.value, {
       address: payload.address,
       lat: payload.lat,
       lon: payload.lon,
+      ...(city ? { city } : {}),
     })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Не удалось сохранить адрес'
@@ -419,54 +496,41 @@ const isFreshProject = computed(() => {
 })
 
 function openAddDialog() {
-  pickedKind.value = null
-  pickedElement.value = null
+  pickedTool.value = null
+  elementDraftName.value = ''
+  elementDraftHeight.value = 1
   addDialogOpen.value = true
 }
 
-function pickElement(t: (typeof ELEMENT_TYPES)[number]) {
-  pickedKind.value = 'element'
-  pickedElement.value = t
-}
-
-function pickRoofDraw() {
-  pickedKind.value = 'roof'
-  pickedElement.value = null
-}
-
-function pickWalkwayDraw() {
-  pickedKind.value = 'walkway'
-  pickedElement.value = null
+function pickDrawTool(t: (typeof DRAW_TOOLS)[number]) {
+  pickedTool.value = t
+  const n = (geometry.value.obstacles?.length ?? 0) + 1
+  elementDraftName.value = `Элемент ${n}`
+  elementDraftHeight.value = 1
 }
 
 function startDrawFromDialog() {
-  if (pickedKind.value === 'roof') {
-    drawSession.value = { tool: 'polyline', target: 'roof', label: 'контур кровли' }
-    editTarget.value = null
-  } else if (pickedKind.value === 'walkway') {
-    drawSession.value = { tool: 'polyline', target: 'walkway', label: 'пешеходную дорожку' }
-    editTarget.value = null
-  } else if (pickedElement.value) {
-    const t = pickedElement.value
-    drawSession.value = {
-      tool: t.hasHeight ? 'rect' : 'circle',
-      target: 'obstacle',
-      label: t.short,
-      short: t.short,
-      typeName: t.name,
-      hM: t.hasHeight ? t.hM : undefined,
-    }
-    editTarget.value = null
+  const t = pickedTool.value
+  if (!t) return
+  const label = elementDraftName.value.trim() || `Элемент ${(geometry.value.obstacles?.length ?? 0) + 1}`
+  drawSession.value = {
+    tool: t.tool,
+    target: 'obstacle',
+    label,
+    short: label,
+    typeName: label,
+    hM: elementDraftHeight.value,
   }
+  orthogonalMode.value = true
   addDialogOpen.value = false
-  pickedKind.value = null
-  pickedElement.value = null
+  pickedTool.value = null
 }
 
 function startDrawRoof() {
   if (archiveView.value) return
   drawSession.value = { tool: 'polyline', target: 'roof', label: 'контур кровли' }
   editTarget.value = null
+  orthogonalMode.value = true
 }
 
 function cancelDraw() {
@@ -478,18 +542,34 @@ function onDrawFinish() {
 }
 
 function onRoofChange(points: number[][]) {
-  geometry.value = { ...geometry.value, roof: points.map((p) => [...p]) }
+  geometry.value = {
+    ...geometry.value,
+    roof: points.map((p) => [...p]),
+    sideParapets: syncSideParapets(points),
+  }
   editTarget.value = 'roof'
+  roofExpanded.value = true
 }
 
-function onWalkwayChange(points: number[][]) {
-  geometry.value = { ...geometry.value, walkway: points.map((p) => [...p]) }
-  editTarget.value = 'walkway'
+function syncSideParapets(points: number[][]): number[] {
+  const count = roofSideCount(points)
+  const prev = geometry.value.sideParapets ?? []
+  return Array.from({ length: count }, (_, i) => prev[i] ?? DEFAULT_PARAPET_M)
+}
+
+function ensureSideParapets(): number[] {
+  return syncSideParapets(geometry.value.roof ?? [])
+}
+
+function updateSideParapet(index: number, value: number) {
+  const sides = ensureSideParapets()
+  sides[index] = Math.max(0, value)
+  geometry.value = { ...geometry.value, sideParapets: sides }
 }
 
 function onObstacleAdd(o: Obstacle) {
   const id = `${o.short?.toLowerCase().replace(/\s+/g, '-') ?? 'el'}-${Date.now()}`
-  const obstacle = { ...o, id }
+  const obstacle = { ...o, id, name: o.name ?? o.short }
   geometry.value = {
     ...geometry.value,
     obstacles: [...(geometry.value.obstacles ?? []), obstacle],
@@ -511,12 +591,12 @@ function onObstacleSelect(id: string) {
 }
 
 function selectEditRoof() {
-  editTarget.value = 'roof'
-  drawSession.value = null
-}
-
-function selectEditWalkway() {
-  editTarget.value = 'walkway'
+  if (editTarget.value === 'roof') {
+    roofExpanded.value = !roofExpanded.value
+  } else {
+    editTarget.value = 'roof'
+    roofExpanded.value = true
+  }
   drawSession.value = null
 }
 
@@ -533,19 +613,45 @@ const selectedObstacle = computed(() => {
 const drawBannerLabel = computed(() => {
   const s = drawSession.value
   if (!s) return ''
-  if (s.tool === 'polyline') return `Обведите ${s.label} на плане (Enter — завершить, Esc — отмена)`
-  if (s.tool === 'rect') return `Потяните прямоугольник для «${s.label}»`
+  const ortho = orthogonalMode.value ? ' · ортогональный режим' : ''
+  if (s.tool === 'polyline') return `Обведите ${s.label} на плане (Enter — завершить, Esc — отмена)${ortho}`
+  if (s.tool === 'rect') return `Потяните прямоугольник для «${s.label}»${ortho}`
   return `Укажите центр и радиус для «${s.label}»`
 })
+
+const roofLengthLabel = computed(() => {
+  const pts = geometry.value.roof ?? []
+  if (pts.length < 2) return '—'
+  return formatLengthM(closedPolylineLengthPx(pts))
+})
+
+const sideParapetsList = computed(() => ensureSideParapets())
+
+const cityFromAddress = computed(() => parseCityFromAddress(mapAddress.value || project.value?.address || ''))
+
+const climateCityLabel = computed(() => cityFromAddress.value || project.value?.city || '')
+
+const showMapUnderlay = computed(() =>
+  STEPS[step.value]?.id === 'roof'
+  && primarySource.value === 'map'
+  && mapSelected.value
+  && mapLat.value != null
+  && mapLon.value != null,
+)
+
+const showFileUnderlay = computed(() =>
+  STEPS[step.value]?.id === 'roof'
+  && hasUnderlay.value
+  && primarySource.value !== 'map',
+)
 
 function deleteSelected() {
   const t = editTarget.value
   if (!t) return
   if (t === 'roof') {
     if (!confirm('Сбросить контур кровли?')) return
-    geometry.value = { ...geometry.value, roof: [] }
-  } else if (t === 'walkway') {
-    geometry.value = { ...geometry.value, walkway: [] }
+    geometry.value = { ...geometry.value, roof: [], sideParapets: [] }
+    roofExpanded.value = false
   } else if ('obstacleId' in t) {
     geometry.value = {
       ...geometry.value,
@@ -553,6 +659,15 @@ function deleteSelected() {
     }
   }
   editTarget.value = null
+}
+
+function updateObstacleName(id: string, name: string) {
+  geometry.value = {
+    ...geometry.value,
+    obstacles: (geometry.value.obstacles ?? []).map((o) =>
+      o.id === id ? { ...o, name, short: name, type: name } : o,
+    ),
+  }
 }
 
 function updateObstacleHeight(id: string, hM: number) {
@@ -584,6 +699,7 @@ async function runCalculateWithSensors(sensors: Sensor[]) {
     northDeg: northDeg.value,
     snowRegion: snowRegion.value,
     windRegion: windRegion.value,
+    parapetMm: parapetMm.value,
     geometry: geometry.value,
     sensors,
   })
@@ -625,11 +741,12 @@ const canvasLayers = computed(() => {
     return { roof: false, underlay: false, obstacles: false, bags: false, sensors: false, wind: false }
   }
   const hasGeometry = !!(geometry.value.roof?.length)
+  const onRoofStep = id === 'roof'
   return {
     roof: hasGeometry,
-    underlay: hasUnderlay.value && showUnderlay.value,
+    underlay: onRoofStep && showFileUnderlay.value && showUnderlay.value,
     obstacles: id !== 'upload',
-    walkway: id === 'roof' || id === 'bags' || id === 'result',
+    walkway: false,
     parapet: id === 'roof' || id === 'bags' || id === 'result',
     bags: id === 'bags' || id === 'result',
     sensors: id === 'bags' || id === 'result',
@@ -639,7 +756,9 @@ const canvasLayers = computed(() => {
 
 const showParapet = computed(() => parapetMm.value > 0)
 
-const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
+const roofElements = computed(() =>
+  (geometry.value.obstacles ?? []).map((o, i) => ({ ...o, ordinal: i + 1 })),
+)
 </script>
 
 <template>
@@ -701,45 +820,64 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
       <template v-else>
       <div class="canvas-pane">
         <div
-          v-if="STEPS[step].id === 'roof' && hasUnderlay"
+          v-if="STEPS[step].id === 'roof' && showFileUnderlay"
           class="underlay-toggle"
         >
           <button type="button" class="toggle-track" :class="{ on: showUnderlay }" @click="showUnderlay = !showUnderlay">
             <span class="toggle-thumb" />
           </button>
           <span class="toggle-label">Подложка (оригинал)</span>
-          <span v-if="showUnderlay" class="toggle-hint">· сравнение с чертежом</span>
         </div>
         <div
           v-if="STEPS[step].id === 'roof' && drawSession"
           class="draw-banner"
         >
           <span>{{ drawBannerLabel }}</span>
+          <button
+            type="button"
+            class="ortho-btn"
+            :class="{ active: orthogonalMode }"
+            @click="orthogonalMode = !orthogonalMode"
+          >⊥ Ортогональ</button>
           <button type="button" class="draw-cancel" @click="cancelDraw">Отмена</button>
         </div>
-        <RoofCanvas
-          :geometry="geometry"
-          :calculation="calculation"
-          :north-deg="northDeg"
-          :underlay-url="underlaySrc"
-          :view3d="view3d && ['bags', 'result'].includes(STEPS[step].id)"
-          :editable="STEPS[step].id === 'roof' && !archiveView"
-          :editable-sensors="STEPS[step].id === 'bags' && !archiveView"
-          :draw-session="STEPS[step].id === 'roof' ? drawSession : null"
-          :edit-target="STEPS[step].id === 'roof' ? editTarget : null"
-          :show-parapet="showParapet"
-          :layers="canvasLayers"
-          :preview-wind-rose="climateWindRose"
-          @sensor-move="onSensorMove"
-          @obstacle-select="onObstacleSelect"
-          @roof-change="onRoofChange"
-          @walkway-change="onWalkwayChange"
-          @obstacle-add="onObstacleAdd"
-          @obstacle-change="onObstacleChange"
-          @draw-finish="onDrawFinish"
-          @draw-cancel="cancelDraw"
-          @edit-clear="clearEditSelection"
-        />
+        <div class="canvas-stack">
+          <YandexMapPane
+            v-if="showMapUnderlay"
+            class="map-underlay"
+            :address="mapAddress"
+            :lat="mapLat"
+            :lon="mapLon"
+            :city="project?.city ?? ''"
+            :interactive="false"
+          />
+          <RoofCanvas
+            class="roof-overlay"
+            :class="{ 'roof-overlay--map': showMapUnderlay }"
+            :geometry="geometry"
+            :calculation="calculation"
+            :north-deg="northDeg"
+            :underlay-url="underlaySrc"
+            :view3d="view3d && ['bags', 'result'].includes(STEPS[step].id)"
+            :editable="STEPS[step].id === 'roof' && !archiveView"
+            :editable-sensors="STEPS[step].id === 'bags' && !archiveView"
+            :draw-session="STEPS[step].id === 'roof' ? drawSession : null"
+            :edit-target="STEPS[step].id === 'roof' ? editTarget : null"
+            :show-parapet="showParapet"
+            :orthogonal="orthogonalMode"
+            :transparent-bg="showMapUnderlay"
+            :layers="canvasLayers"
+            :preview-wind-rose="climateWindRose"
+            @sensor-move="onSensorMove"
+            @obstacle-select="onObstacleSelect"
+            @roof-change="onRoofChange"
+            @obstacle-add="onObstacleAdd"
+            @obstacle-change="onObstacleChange"
+            @draw-finish="onDrawFinish"
+            @draw-cancel="cancelDraw"
+            @edit-clear="clearEditSelection"
+          />
+        </div>
         <div v-if="['bags', 'result'].includes(STEPS[step].id)" class="canvas-tools">
           <button type="button" class="tool" :class="{ active: !view3d }" @click="view3d = false">2D</button>
           <button type="button" class="tool" :class="{ active: view3d }" @click="view3d = true">3D</button>
@@ -752,67 +890,57 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
       <aside class="panel">
         <template v-if="STEPS[step].id === 'roof'">
           <h3>Геометрия кровли</h3>
-          <p>Проверьте контур и препятствия. Нарисуйте элементы на плане или перетащите вершины и маркеры.</p>
-          <ul class="list compact">
-            <li>Площадь: {{ roofAreaLabel }} м²</li>
-          </ul>
-
-          <div v-if="!archiveView" class="parapet-row">
-            <div class="parapet-info">
-              <strong>Парапет по периметру</strong>
-              <span class="hint-inline">Высота влияет на расчёт</span>
-            </div>
-            <input
-              v-model.number="parapetMm"
-              type="number"
-              min="0"
-              max="3000"
-              step="50"
-              class="parapet-input"
-            />
-            <span class="parapet-unit">мм</span>
-          </div>
+          <p>Обведите контур на {{ showMapUnderlay ? 'карте' : showFileUnderlay ? 'чертеже' : 'плане' }} и добавьте элементы.</p>
 
           <div v-if="!archiveView" class="panel-actions">
-            <button type="button" class="btn block" @click="openAddDialog">+ Добавить элемент</button>
             <button
               v-if="!geometry.roof?.length"
               type="button"
-              class="btn secondary block"
+              class="btn accent block"
               @click="startDrawRoof"
             >Обвести контур кровли</button>
+            <button type="button" class="btn block" @click="openAddDialog">+ Добавить элементы</button>
           </div>
 
           <div class="obstacle-list">
+            <div class="roof-block" :class="{ active: editTarget === 'roof', expanded: roofExpanded }">
+              <button type="button" class="obstacle-item roof-head" @click="selectEditRoof">
+                <span class="obstacle-name">{{ roofName }}</span>
+                <span class="obstacle-h">{{ roofLengthLabel }}</span>
+              </button>
+              <div v-if="roofExpanded && geometry.roof?.length" class="roof-sides">
+                <div
+                  v-for="(_, i) in sideParapetsList"
+                  :key="`side-${i}`"
+                  class="side-row"
+                >
+                  <span class="side-label">{{ sideLabel(i) }}</span>
+                  <label class="side-parapet">
+                    <span>парапет, м</span>
+                    <input
+                      :value="sideParapetsList[i]"
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      :disabled="archiveView"
+                      @input="updateSideParapet(i, Number(($event.target as HTMLInputElement).value))"
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <button
-              type="button"
-              class="obstacle-item"
-              :class="{ active: editTarget === 'roof' }"
-              @click="selectEditRoof"
-            >
-              <span class="obstacle-name">Контур кровли</span>
-              <span class="obstacle-h">{{ geometry.roof?.length ?? 0 }} точек</span>
-            </button>
-            <button
-              v-if="hasWalkway || !archiveView"
-              type="button"
-              class="obstacle-item"
-              :class="{ active: editTarget === 'walkway' }"
-              @click="selectEditWalkway"
-            >
-              <span class="obstacle-name">Пешеходная дорожка</span>
-              <span class="obstacle-h">{{ geometry.walkway?.length ?? 0 }} точек</span>
-            </button>
-            <button
-              v-for="o in geometry.obstacles"
+              v-for="o in roofElements"
               :key="o.id"
               type="button"
               class="obstacle-item"
               :class="{ active: editTarget && typeof editTarget === 'object' && editTarget.obstacleId === o.id }"
               @click="onObstacleSelect(o.id)"
             >
-              <span class="obstacle-name">{{ o.short || o.type }}</span>
-              <span v-if="o.shape === 'rect'" class="obstacle-h">{{ (o.hM ?? 0).toFixed(1) }} м</span>
+              <span class="obstacle-name">{{ o.ordinal }}. {{ o.name || o.short }}</span>
+              <span class="obstacle-h">{{ (o.hM ?? 0).toFixed(1) }} м</span>
             </button>
           </div>
 
@@ -820,8 +948,15 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
             <button type="button" class="btn danger" @click="deleteSelected">Удалить</button>
           </div>
 
-          <div v-if="selectedObstacle?.shape === 'rect' && !archiveView" class="height-editor">
-            <label>Высота «{{ selectedObstacle.short }}», м
+          <div v-if="selectedObstacle && !archiveView" class="height-editor">
+            <label>Название
+              <input
+                :value="selectedObstacle.name ?? selectedObstacle.short"
+                type="text"
+                @input="updateObstacleName(selectedObstacle.id, ($event.target as HTMLInputElement).value)"
+              />
+            </label>
+            <label>Высота, м
               <input
                 :value="selectedObstacle.hM ?? 0"
                 type="number"
@@ -840,7 +975,6 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
               class="height-range"
               @input="updateObstacleHeight(selectedObstacle.id, Number(($event.target as HTMLInputElement).value))"
             />
-            <p class="hint">Кровля — отметка 0. Элемент строится вверх от кровли. Угловые маркеры — на плане.</p>
           </div>
         </template>
 
@@ -850,9 +984,15 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
             {{ climatePreview?.norm ?? 'СНиП 2.01.01-82' }}
             · роза ветров за {{ climatePreview?.monthLabel ?? 'январь' }}
           </p>
-          <label>Город
-            <input :value="project?.city ?? ''" readonly />
+          <label>Город (определён по адресу)
+            <input :value="climateCityLabel" readonly />
           </label>
+          <p v-if="climatePreview?.regionSource === 'geo'" class="hint climate-geo">
+            Снеговой и ветровой районы определены по координатам объекта на карте
+          </p>
+          <p v-else-if="mapLat == null || mapLon == null" class="hint climate-geo-warn">
+            Укажите точку на карте на шаге «Подложка», чтобы определить районы автоматически
+          </p>
           <label>Снеговой район (СП 20)
             <select v-model="snowRegion" :disabled="archiveView" @change="refreshClimate">
               <option v-for="r in ['I','II','III','IV','V','VI','VII','VIII']" :key="r" :value="r">{{ r }}</option>
@@ -906,10 +1046,20 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
             <div><span>Датчики</span><strong>{{ calculation.metrics.sensors }} шт.</strong></div>
             <div><span>Покрытие</span><strong>{{ calculation.metrics.coverage }}%</strong></div>
           </div>
+          <div v-if="calculation?.metrics?.risk" class="risk-chips">
+            <span v-if="calculation.metrics.risk.critical" class="chip critical">{{ calculation.metrics.risk.critical }} критич.</span>
+            <span v-if="calculation.metrics.risk.high" class="chip high">{{ calculation.metrics.risk.high }} высоких</span>
+            <span v-if="calculation.metrics.risk.medium" class="chip medium">{{ calculation.metrics.risk.medium }} средних</span>
+          </div>
           <p class="hint">Перетащите датчики на схеме, затем пересчитайте при необходимости.</p>
           <button type="button" class="btn" :disabled="archiveView" @click="recalcWithSensors">Пересчитать с учётом датчиков</button>
-          <ul class="list">
-            <li v-for="bag in calculation?.snowbags" :key="bag.id">{{ bag.id }} — {{ bag.name }} ({{ bag.area }} м²)</li>
+          <ul class="list bag-list">
+            <li v-for="bag in calculation?.snowbags" :key="bag.id">
+              <strong>{{ bag.id }}</strong> — {{ bag.name }}
+              <span v-if="bag.scheme" class="bag-scheme">{{ bag.scheme }}</span>
+              <span v-if="bag.riskClass" class="bag-risk" :class="bag.risk">{{ bag.riskClass }}</span>
+              <div class="bag-meta">{{ bag.area }} м² · μ={{ bag.mu }} · S={{ bag.load }} кПа</div>
+            </li>
           </ul>
         </template>
 
@@ -942,28 +1092,29 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
 
     <div v-if="addDialogOpen" class="dialog-backdrop" @click.self="addDialogOpen = false">
       <div class="dialog">
-        <h4>Добавить элемент кровли</h4>
-        <template v-if="!pickedKind">
-          <p class="hint">Выберите тип:</p>
+        <h4>Добавить элементы</h4>
+        <template v-if="!pickedTool">
+          <p class="hint">Выберите инструмент:</p>
           <div class="dialog-grid">
-            <button type="button" class="dialog-item" @click="pickRoofDraw">Контур кровли</button>
-            <button type="button" class="dialog-item" @click="pickWalkwayDraw">Пешеходная дорожка</button>
             <button
-              v-for="t in ELEMENT_TYPES"
+              v-for="t in DRAW_TOOLS"
               :key="t.id"
               type="button"
               class="dialog-item"
-              @click="pickElement(t)"
+              @click="pickDrawTool(t)"
             >{{ t.name }}</button>
           </div>
         </template>
         <template v-else>
-          <p class="hint">
-            {{ pickedKind === 'element' ? pickedElement?.name : pickedKind === 'roof' ? 'Контур кровли' : 'Пешеходная дорожка' }}
-            — затем укажите на плане.
-          </p>
+          <label>Название
+            <input v-model="elementDraftName" type="text" placeholder="Элемент 1" />
+          </label>
+          <label>Высота, м
+            <input v-model.number="elementDraftHeight" type="number" min="0" max="50" step="0.1" />
+          </label>
+          <p class="hint">{{ pickedTool.name }} — затем укажите на {{ showMapUnderlay ? 'карте' : 'плане' }}.</p>
           <div class="dialog-footer">
-            <button type="button" class="btn secondary" @click="pickedKind = null; pickedElement = null">Назад</button>
+            <button type="button" class="btn secondary" @click="pickedTool = null">Назад</button>
             <button type="button" class="btn accent" @click="startDrawFromDialog">Добавить на план</button>
           </div>
         </template>
@@ -1034,6 +1185,24 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
   border: none; background: rgba(255,255,255,.2); color: #fff; border-radius: 6px;
   padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
 }
+.ortho-btn {
+  border: none; background: rgba(255,255,255,.15); color: #fff; border-radius: 6px;
+  padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+}
+.ortho-btn.active { background: #fff; color: var(--red-60); }
+.canvas-stack { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.map-underlay { flex: 1; min-height: 0; margin: 0 !important; border-radius: var(--radius-lg); }
+.map-underlay :deep(.map-wrap) { margin: 0; min-height: 100%; height: 100%; }
+.roof-overlay { flex: 1; min-height: 0; }
+.roof-overlay--map { position: absolute; inset: 0; z-index: 1; pointer-events: auto; }
+.roof-block { border: 1px solid var(--border-secondary-enabled); border-radius: 8px; overflow: hidden; margin-bottom: 4px; }
+.roof-block.active { border-color: var(--red-60); }
+.roof-head { width: 100%; border: none; border-radius: 0; }
+.roof-sides { padding: 8px 12px 12px; background: var(--neutral-10); border-top: 1px solid var(--border-secondary-enabled); }
+.side-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; }
+.side-label { font-size: 12px; font-weight: 600; color: var(--content-secondary-enabled); }
+.side-parapet { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--content-tertiary-enabled); }
+.side-parapet input { width: 64px; height: 32px; margin: 0; text-align: center; }
 .parapet-row {
   display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px;
   border: 1px solid var(--border-secondary-enabled); border-radius: 8px; background: var(--neutral-10);
@@ -1068,6 +1237,8 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
   font-size: 22px; line-height: 1; cursor: pointer; color: var(--content-tertiary-enabled);
 }
 .climate-norm { margin-top: 0; }
+.climate-geo { margin: 4px 0 12px; color: var(--content-secondary-enabled); }
+.climate-geo-warn { margin: 4px 0 12px; color: var(--status-warning, #b45309); }
 .climate-metrics {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0;
   padding: 14px; background: var(--neutral-10); border-radius: var(--radius-lg);
@@ -1098,6 +1269,19 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
   border-radius: var(--radius-lg); text-align: center; color: var(--content-tertiary-enabled); cursor: pointer;
 }
 .list { padding-left: 18px; line-height: 1.8; }
+.bag-list { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 10px; }
+.bag-list li { border: 1px solid var(--border-secondary-enabled); border-radius: var(--radius-md); padding: 10px 12px; }
+.bag-meta { font-size: 12px; color: var(--content-tertiary-enabled); margin-top: 4px; }
+.bag-scheme { font-size: 11px; font-weight: 700; color: var(--content-secondary-enabled); margin-left: 6px; padding: 2px 6px; background: var(--neutral-10); border-radius: 4px; }
+.bag-risk { font-size: 11px; font-weight: 800; margin-left: 6px; }
+.bag-risk.critical { color: var(--red-60); }
+.bag-risk.high { color: var(--orange-60); }
+.bag-risk.medium { color: var(--yellow-40); }
+.risk-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.risk-chips .chip { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-md); }
+.risk-chips .chip.critical { background: var(--red-10); color: var(--red-60); }
+.risk-chips .chip.high { background: var(--orange-10); color: var(--orange-60); }
+.risk-chips .chip.medium { background: var(--yellow-10); color: var(--yellow-40); }
 .metrics { display: grid; gap: 10px; margin: 16px 0; }
 .metrics div { display: flex; justify-content: space-between; padding: 10px 12px; background: var(--neutral-10); border-radius: 8px; }
 .metrics span { color: var(--content-tertiary-enabled); }

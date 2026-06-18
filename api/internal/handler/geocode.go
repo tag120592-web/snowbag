@@ -105,6 +105,11 @@ func (h *Handler) geocode(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, res)
 		return
 	}
+	if res, err := h.geocodeNominatim(ctx, search); err == nil {
+		res.Address = q
+		writeJSON(w, http.StatusOK, res)
+		return
+	}
 
 	writeError(w, http.StatusNotFound, "address not found")
 }
@@ -174,7 +179,7 @@ func parseRussianAddress(query string) (parsedAddress, bool) {
 	last := clean[len(clean)-1]
 	if cityName, ok := cityMentionedInQuery(first); ok {
 		city = cityName
-		street = last
+		street = strings.Join(clean[1:], ", ")
 	} else if cityName, ok := cityMentionedInQuery(last); ok {
 		city = cityName
 		street = strings.Join(clean[:len(clean)-1], ", ")

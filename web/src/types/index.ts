@@ -72,6 +72,8 @@ export interface Project extends ProjectListItem {
 
 export interface GeometryData {
   roof?: number[][]
+  roofName?: string
+  sideParapets?: number[]
   obstacles?: Obstacle[]
   walkway?: number[][]
   areaM2?: number
@@ -81,7 +83,8 @@ export interface Obstacle {
   id: string
   type: string
   short: string
-  shape: 'rect' | 'circle'
+  name?: string
+  shape: 'rect' | 'circle' | 'polyline'
   x?: number
   y?: number
   w?: number
@@ -89,6 +92,7 @@ export interface Obstacle {
   cx?: number
   cy?: number
   r?: number
+  points?: number[][]
   hM?: number
 }
 
@@ -96,6 +100,8 @@ export interface Snowbag {
   id: string
   name: string
   basis: string
+  scheme?: string
+  riskClass?: string
   poly: number[][]
   mu: number
   load: string
@@ -151,6 +157,14 @@ export const DEMO_GEOMETRY: GeometryData = {
   walkway: [[120, 430], [520, 430], [520, 560]],
   areaM2: 8240,
 }
+
+export const DRAW_TOOLS = [
+  { id: 'polyline', name: 'Полилиния', tool: 'polyline' as const },
+  { id: 'rect', name: 'Прямоугольник', tool: 'rect' as const },
+  { id: 'circle', name: 'Окружность', tool: 'circle' as const },
+] as const
+
+export const DEFAULT_PARAPET_M = 0.6
 
 export const ELEMENT_TYPES = [
   { id: 'vent', name: 'Вентиляционная установка', short: 'Вентустановка', hM: 2.4, hasHeight: true },

@@ -36,6 +36,7 @@ type ClimateLookupResult struct {
 	MonthLabel    string
 	MatchedCity   string
 	MatchQuality  string
+	RegionSource  string
 	WindRose      []model.WindRose
 	Prevailing    model.WindRose
 }
