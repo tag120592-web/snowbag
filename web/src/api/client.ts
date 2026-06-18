@@ -1,6 +1,7 @@
 import type {
   CalculationData,
   CalculationHistory,
+  CalculationRunSnapshot,
   CreateProjectPayload,
   GeometryData,
   Project,
@@ -45,14 +46,26 @@ export async function deleteProject(id: string) {
   }
 }
 
-export function lookupClimate(city: string) {
-  return request<{
-    snowRegion: string
-    windRegion: string
-    sg: number
-    w0: number
-    windRose: CalculationData['windRose']
-  }>(`/api/v1/climate?city=${encodeURIComponent(city)}`)
+export function lookupClimate(city: string, snowRegion?: string, windRegion?: string) {
+  const params = new URLSearchParams({ city })
+  if (snowRegion) params.set('snowRegion', snowRegion)
+  if (windRegion) params.set('windRegion', windRegion)
+  return request<ClimateLookupResult>(`/api/v1/climate?${params}`)
+}
+
+export interface ClimateLookupResult {
+  norm: string
+  month: string
+  monthLabel: string
+  matchedCity?: string
+  matchQuality?: string
+  snowRegion: string
+  windRegion: string
+  sg: number
+  w0: number
+  windRose: CalculationData['windRose']
+  prevailingWind?: { dir: string; deg: number; v: number }
+  prevailingLabel?: string
 }
 
 export function calculateProject(id: string, body: Record<string, unknown> = {}) {
@@ -64,6 +77,10 @@ export function calculateProject(id: string, body: Record<string, unknown> = {})
 
 export function listCalculations(projectId: string) {
   return request<CalculationHistory>(`/api/v1/projects/${projectId}/calculations`)
+}
+
+export function getCalculationRun(projectId: string, runId: string) {
+  return request<CalculationRunSnapshot>(`/api/v1/projects/${projectId}/calculations/${runId}`)
 }
 
 export function recalculateProject(projectId: string) {
@@ -103,4 +120,9 @@ export async function downloadExport(id: string, format: 'json' | 'pdf' | 'excel
 
 export function healthCheck() {
   return request<{ status: string }>('/health')
+}
+
+export function projectUnderlayUrl(projectId: string) {
+  const base = import.meta.env.VITE_API_URL ?? ''
+  return `${base}/api/v1/projects/${projectId}/underlay`
 }

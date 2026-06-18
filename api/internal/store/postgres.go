@@ -94,22 +94,11 @@ func (s *Store) ListProjects(ctx context.Context) ([]model.ProjectListItem, erro
 
 func (s *Store) GetProject(ctx context.Context, id uuid.UUID) (*model.Project, error) {
 	row := s.pool.QueryRow(ctx, `
-		SELECT id, name, number, calc_no, customer, address, city, area_m2, roof_type, parapet,
+		SELECT id, name, number, calc_no, customer, address, city, lat, lon, area_m2, roof_type, parapet,
 		       status, author, north_deg, snow_region, wind_region, geometry, climate, calculation,
 		       underlay_key, created_at, updated_at
 		FROM projects WHERE id = $1`, id)
-
-	var p model.Project
-	var underlayKey string
-	if err := row.Scan(
-		&p.ID, &p.Name, &p.Number, &p.CalcNo, &p.Customer, &p.Address, &p.City, &p.AreaM2,
-		&p.RoofType, &p.Parapet, &p.Status, &p.Author, &p.NorthDeg, &p.SnowRegion, &p.WindRegion,
-		&p.Geometry, &p.Climate, &p.Calculation, &underlayKey, &p.CreatedAt, &p.UpdatedAt,
-	); err != nil {
-		return nil, err
-	}
-	_ = underlayKey
-	return &p, nil
+	return scanProject(row)
 }
 
 func (s *Store) CreateProject(ctx context.Context, req model.CreateProjectRequest) (*model.Project, error) {
@@ -120,7 +109,7 @@ func (s *Store) CreateProject(ctx context.Context, req model.CreateProjectReques
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO projects (id, name, address, city, customer, number, calc_no, author, status, climate)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft', $9)
-		RETURNING id, name, number, calc_no, customer, address, city, area_m2, roof_type, parapet,
+		RETURNING id, name, number, calc_no, customer, address, city, lat, lon, area_m2, roof_type, parapet,
 		          status, author, north_deg, snow_region, wind_region, geometry, climate, calculation,
 		          underlay_key, created_at, updated_at`,
 		id, req.Name, req.Address, req.City, req.Customer,
@@ -138,6 +127,7 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 		return nil, err
 	}
 	name, address, city, customer := cur.Name, cur.Address, cur.City, cur.Customer
+	lat, lon := cur.Lat, cur.Lon
 	areaM2, northDeg := cur.AreaM2, cur.NorthDeg
 	snowRegion, windRegion, status := cur.SnowRegion, cur.WindRegion, cur.Status
 	geometry, climate, calculation := cur.Geometry, cur.Climate, cur.Calculation
@@ -153,6 +143,12 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 	}
 	if req.Customer != nil {
 		customer = *req.Customer
+	}
+	if req.Lat != nil {
+		lat = req.Lat
+	}
+	if req.Lon != nil {
+		lon = req.Lon
 	}
 	if req.AreaM2 != nil {
 		areaM2 = *req.AreaM2
@@ -183,13 +179,13 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 		UPDATE projects SET
 			name = $2, address = $3, city = $4, customer = $5, area_m2 = $6,
 			north_deg = $7, snow_region = $8, wind_region = $9, status = $10,
-			geometry = $11, climate = $12, calculation = $13, updated_at = now()
+			geometry = $11, climate = $12, calculation = $13, lat = $14, lon = $15, updated_at = now()
 		WHERE id = $1
-		RETURNING id, name, number, calc_no, customer, address, city, area_m2, roof_type, parapet,
+		RETURNING id, name, number, calc_no, customer, address, city, lat, lon, area_m2, roof_type, parapet,
 		          status, author, north_deg, snow_region, wind_region, geometry, climate, calculation,
 		          underlay_key, created_at, updated_at`,
 		id, name, address, city, customer, areaM2, northDeg, snowRegion, windRegion, status,
-		geometry, climate, calculation,
+		geometry, climate, calculation, lat, lon,
 	)
 	return scanProject(row)
 }
@@ -397,6 +393,55 @@ func (s *Store) ListCalculationHistory(ctx context.Context, projectID uuid.UUID)
 	}, nil
 }
 
+func (s *Store) GetCalculationRun(ctx context.Context, projectID, runID uuid.UUID) (*model.CalculationRun, error) {
+	if runID == projectID {
+		p, err := s.GetProject(ctx, projectID)
+		if err != nil {
+			return nil, err
+		}
+		if !hasCalculation(p.Calculation) {
+			return nil, fmt.Errorf("calculation not found")
+		}
+		return &model.CalculationRun{
+			ID:          p.ID,
+			ProjectID:   p.ID,
+			CalcNo:      p.CalcNo,
+			Author:      p.Author,
+			Status:      statusLabel(p.Status),
+			NorthDeg:    p.NorthDeg,
+			SnowRegion:  p.SnowRegion,
+			WindRegion:  p.WindRegion,
+			Geometry:    p.Geometry,
+			Climate:     p.Climate,
+			Calculation: p.Calculation,
+			CreatedAt:   p.UpdatedAt,
+			Created:     formatDate(p.UpdatedAt),
+			Current:     true,
+			Sensors:     sensorsFromCalc(p.Calculation),
+		}, nil
+	}
+
+	row := s.pool.QueryRow(ctx, `
+		SELECT id, project_id, calc_no, author, status, north_deg, snow_region, wind_region,
+		       geometry, climate, calculation, created_at
+		FROM calculation_runs
+		WHERE id = $1 AND project_id = $2`, runID, projectID)
+
+	var run model.CalculationRun
+	var status string
+	if err := row.Scan(
+		&run.ID, &run.ProjectID, &run.CalcNo, &run.Author, &status,
+		&run.NorthDeg, &run.SnowRegion, &run.WindRegion,
+		&run.Geometry, &run.Climate, &run.Calculation, &run.CreatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("calculation run not found")
+	}
+	run.Status = statusLabel(status)
+	run.Created = formatDate(run.CreatedAt)
+	run.Sensors = sensorsFromCalc(run.Calculation)
+	return &run, nil
+}
+
 func (s *Store) RecalculateProject(ctx context.Context, projectID uuid.UUID, geomJSON json.RawMessage, areaM2 float64, calcJSON json.RawMessage) (*model.Project, error) {
 	if err := s.ArchiveCurrentCalculation(ctx, projectID); err != nil {
 		return nil, err
@@ -423,7 +468,7 @@ func scanProject(row pgxRow) (*model.Project, error) {
 	var p model.Project
 	var underlayKey string
 	if err := row.Scan(
-		&p.ID, &p.Name, &p.Number, &p.CalcNo, &p.Customer, &p.Address, &p.City, &p.AreaM2,
+		&p.ID, &p.Name, &p.Number, &p.CalcNo, &p.Customer, &p.Address, &p.City, &p.Lat, &p.Lon, &p.AreaM2,
 		&p.RoofType, &p.Parapet, &p.Status, &p.Author, &p.NorthDeg, &p.SnowRegion, &p.WindRegion,
 		&p.Geometry, &p.Climate, &p.Calculation, &underlayKey, &p.CreatedAt, &p.UpdatedAt,
 	); err != nil {
@@ -468,6 +513,8 @@ func formatDate(t time.Time) string {
 func EnsureMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	_, err := pool.Exec(ctx, `
 		ALTER TABLE projects ADD COLUMN IF NOT EXISTS underlay_key TEXT NOT NULL DEFAULT '';
+		ALTER TABLE projects ADD COLUMN IF NOT EXISTS lat NUMERIC(10, 7);
+		ALTER TABLE projects ADD COLUMN IF NOT EXISTS lon NUMERIC(10, 7);
 		CREATE TABLE IF NOT EXISTS project_files (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,

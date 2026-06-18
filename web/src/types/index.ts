@@ -1,3 +1,9 @@
+export interface MapSelectPayload {
+  address: string
+  lat: number
+  lon: number
+}
+
 export interface CreateProjectPayload {
   name: string
   address?: string
@@ -30,6 +36,15 @@ export interface CalculationRunItem {
   sensors: number
 }
 
+export interface CalculationRunSnapshot extends CalculationRunItem {
+  northDeg: number
+  snowRegion: string
+  windRegion: string
+  geometry: GeometryData
+  climate: Record<string, string>
+  calculation: CalculationData
+}
+
 export interface CalculationHistory {
   projectId: string
   calcNo: string
@@ -39,6 +54,8 @@ export interface CalculationHistory {
 
 export interface Project extends ProjectListItem {
   address: string
+  lat?: number | null
+  lon?: number | null
   roofType: string
   parapet: string
   author: string

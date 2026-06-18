@@ -15,6 +15,8 @@ type Project struct {
 	Customer    string          `json:"customer"`
 	Address     string          `json:"address"`
 	City        string          `json:"city"`
+	Lat         *float64        `json:"lat,omitempty"`
+	Lon         *float64        `json:"lon,omitempty"`
 	AreaM2      float64         `json:"areaM2"`
 	RoofType    string          `json:"roofType"`
 	Parapet     string          `json:"parapet"`
@@ -81,6 +83,8 @@ type UpdateProjectRequest struct {
 	Name       *string          `json:"name,omitempty"`
 	Address    *string          `json:"address,omitempty"`
 	City       *string          `json:"city,omitempty"`
+	Lat        *float64         `json:"lat,omitempty"`
+	Lon        *float64         `json:"lon,omitempty"`
 	Customer   *string          `json:"customer,omitempty"`
 	AreaM2     *float64         `json:"areaM2,omitempty"`
 	NorthDeg   *float64         `json:"northDeg,omitempty"`

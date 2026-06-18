@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import * as pdfjsLib from 'pdfjs-dist'
+import { computed, nextTick, ref, watch } from 'vue'
+import YandexMapPane from '@/components/YandexMapPane.vue'
+import type { MapSelectPayload } from '@/types'
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString()
 
 export interface UploadedFileItem {
   name: string
@@ -13,14 +21,18 @@ const props = defineProps<{
   files: UploadedFileItem[]
   scale: string | null
   mapAddress: string
+  mapLat?: number | null
+  mapLon?: number | null
+  mapCity?: string
   mapSelected: boolean
-  underlayUrl: string
+  underlaySrc: string
+  previewUnavailable: string
   uploading: boolean
 }>()
 
 const emit = defineEmits<{
   fileSelect: [file: File]
-  mapSelect: [address: string]
+  mapSelect: [payload: MapSelectPayload]
 }>()
 
 const tab = ref<'file' | 'map'>('file')
@@ -28,12 +40,55 @@ const zoom = ref(100)
 const rot = ref(0)
 const address = ref(props.mapAddress)
 const fileRef = ref<HTMLInputElement | null>(null)
+const mapPaneRef = ref<InstanceType<typeof YandexMapPane> | null>(null)
+const pdfCanvas = ref<HTMLCanvasElement | null>(null)
+const previewError = ref('')
+const dragOver = ref(false)
 
 watch(() => props.mapAddress, (v) => { address.value = v })
 
-const hasFile = () => props.files.length > 0 || !!props.underlayUrl
+const previewFileName = computed(() => {
+  const f = props.files.find((item) => item.selected) ?? props.files[0]
+  return f?.name ?? ''
+})
+
+const isPdfPreview = computed(() => /\.pdf$/i.test(previewFileName.value))
+const isDwgPreview = computed(() => /\.(dwg|dxf)$/i.test(previewFileName.value))
+
+const hasFile = () => props.files.length > 0 || !!props.underlaySrc || !!props.previewUnavailable
 const showFilePreview = () => !props.isFresh || hasFile()
-const showMap = () => !props.isFresh || props.mapSelected
+
+async function renderPdfPreview(url: string) {
+  await nextTick()
+  const canvas = pdfCanvas.value
+  if (!canvas) return
+  previewError.value = ''
+  try {
+    const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise
+    const page = await pdf.getPage(1)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const maxW = 560
+    const maxH = 380
+    const scale = Math.min(maxW / baseViewport.width, maxH / baseViewport.height, 2)
+    const viewport = page.getViewport({ scale })
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('canvas unavailable')
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise
+  } catch {
+    previewError.value = 'Не удалось отобразить PDF. Проверьте, что API и хранилище файлов доступны.'
+  }
+}
+
+watch(
+  () => [props.underlaySrc, isPdfPreview.value] as const,
+  ([src, isPdf]) => {
+    previewError.value = ''
+    if (src && isPdf) void renderPdfPreview(src)
+  },
+  { immediate: true },
+)
 
 function onFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -42,9 +97,34 @@ function onFileChange(e: Event) {
   ;(e.target as HTMLInputElement).value = ''
 }
 
+function onDrop(e: DragEvent) {
+  e.preventDefault()
+  dragOver.value = false
+  const file = e.dataTransfer?.files?.[0]
+  if (file) emit('fileSelect', file)
+}
+
+function onDragOver(e: DragEvent) {
+  e.preventDefault()
+  dragOver.value = true
+}
+
+function onDragLeave() {
+  dragOver.value = false
+}
+
 function onMapSearch() {
   const q = address.value.trim()
-  if (q) emit('mapSelect', q)
+  if (q) mapPaneRef.value?.geocode(q)
+}
+
+function onMapSelect(payload: MapSelectPayload) {
+  address.value = payload.address
+  emit('mapSelect', payload)
+}
+
+function onImageError() {
+  previewError.value = 'Не удалось загрузить изображение. Проверьте доступность хранилища файлов.'
 }
 </script>
 
@@ -78,8 +158,24 @@ function onMapSearch() {
             class="preview"
             :style="{ transform: `scale(${zoom / 100}) rotate(${rot}deg)` }"
           >
-            <img v-if="underlayUrl" :src="underlayUrl" alt="План кровли" class="underlay" />
+            <template v-if="previewUnavailable || isDwgPreview">
+              <div class="preview-unavailable">
+                <div class="preview-unavailable-icon">📐</div>
+                <p>{{ previewUnavailable || 'Превью для DWG/DXF недоступно. Файл сохранён — конвертация будет в следующей версии.' }}</p>
+              </div>
+            </template>
+            <template v-else-if="isPdfPreview && underlaySrc">
+              <canvas ref="pdfCanvas" class="pdf-canvas" />
+            </template>
+            <img
+              v-else-if="underlaySrc"
+              :src="underlaySrc"
+              alt="План кровли"
+              class="underlay"
+              @error="onImageError"
+            />
             <div v-else class="preview-placeholder">Предпросмотр чертежа</div>
+            <p v-if="previewError" class="preview-error">{{ previewError }}</p>
             <div v-if="files[0]" class="caption">
               {{ files.find((f) => f.selected)?.name || files[0].name }} · лист 1 · план кровли
             </div>
@@ -93,29 +189,27 @@ function onMapSearch() {
       </template>
 
       <template v-else>
-        <div class="map-pane">
-          <div v-if="showMap()" class="map-glow" />
-          <span v-if="showMap()" class="map-pin">📍</span>
-          <div class="map-search">
-            <input
-              v-model="address"
-              class="map-input"
-              placeholder="Введите адрес объекта"
-              @keydown.enter="onMapSearch"
-            />
-            <button type="button" class="btn accent" @click="onMapSearch">Указать на карте</button>
-          </div>
-          <div class="map-label">
-            {{ showMap() ? 'Яндекс.Карты · спутниковый снимок' : 'Введите адрес и нажмите «Указать на карте»' }}
-          </div>
-        </div>
+        <YandexMapPane
+          ref="mapPaneRef"
+          :address="mapAddress"
+          :lat="mapLat"
+          :lon="mapLon"
+          :city="mapCity"
+          @select="onMapSelect"
+        />
       </template>
     </div>
 
     <aside class="upload-panel">
       <template v-if="tab === 'file'">
         <h3 class="panel-title">Источник данных</h3>
-        <label class="dropzone">
+        <label
+          class="dropzone"
+          :class="{ 'drag-over': dragOver }"
+          @drop="onDrop"
+          @dragover="onDragOver"
+          @dragleave="onDragLeave"
+        >
           <input ref="fileRef" type="file" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf" hidden @change="onFileChange" />
           <div class="drop-icon">⬆</div>
           <div class="drop-title">Перетащите файл сюда</div>
@@ -146,7 +240,7 @@ function onMapSearch() {
           <input v-model="address" placeholder="г. Екатеринбург, ул. Примерная, 1" @keydown.enter="onMapSearch" />
         </label>
         <button type="button" class="btn accent block" @click="onMapSearch">Найти на Яндекс.Картах</button>
-        <p v-if="mapSelected" class="ok-box">Объект найден. Спутниковый снимок загружен — проверьте контур здания на карте.</p>
+        <p v-if="mapSelected" class="ok-box">Объект найден на карте — проверьте положение маркера на спутниковом снимке.</p>
         <p v-else class="hint">Укажите адрес объекта — карта отобразит спутниковый снимок кровли для дальнейшей обводки контура.</p>
       </template>
     </aside>
@@ -185,10 +279,19 @@ function onMapSearch() {
   border-radius: 4px; padding: 18px; transition: transform .25s; max-width: 100%;
 }
 .underlay { display: block; max-width: 560px; max-height: 380px; object-fit: contain; filter: grayscale(1) opacity(.85); }
+.pdf-canvas { display: block; max-width: 560px; max-height: 380px; filter: grayscale(1) opacity(.85); }
 .preview-placeholder {
   width: 560px; max-width: 100%; height: 280px; display: flex; align-items: center; justify-content: center;
   background: var(--neutral-10); color: var(--content-tertiary-enabled); font-size: 14px;
 }
+.preview-unavailable {
+  width: 560px; max-width: 100%; min-height: 220px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center;
+  background: var(--neutral-10); border-radius: 8px;
+}
+.preview-unavailable-icon { font-size: 36px; opacity: .6; }
+.preview-unavailable p { margin: 0; font-size: 13px; color: var(--content-secondary-enabled); line-height: 1.5; max-width: 420px; }
+.preview-error { margin: 10px 0 0; font-size: 12px; color: var(--red-60); text-align: center; }
 .caption {
   margin-top: 10px; font-family: var(--font-family-mono); font-size: 11px;
   color: var(--content-tertiary-enabled); text-align: center;
@@ -221,7 +324,9 @@ function onMapSearch() {
 .dropzone {
   display: block; margin: 0 20px 16px; padding: 22px 18px; text-align: center; cursor: pointer;
   border: 1.5px dashed var(--border-secondary-enabled); border-radius: var(--radius-lg); background: var(--neutral-10);
+  transition: border-color .15s, background .15s;
 }
+.dropzone.drag-over { border-color: var(--red-60); background: var(--red-10); }
 .drop-icon { font-size: 28px; margin-bottom: 8px; }
 .drop-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
 .drop-hint { font-size: 12.5px; color: var(--content-tertiary-enabled); margin-bottom: 12px; }

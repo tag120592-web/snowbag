@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -50,8 +51,10 @@ func (h *Handler) Routes() http.Handler {
 		r.Delete("/projects/{id}", h.deleteProject)
 		r.Post("/projects/{id}/calculate", h.calculate)
 		r.Get("/projects/{id}/calculations", h.listCalculations)
+		r.Get("/projects/{id}/calculations/{runId}", h.getCalculationRun)
 		r.Post("/projects/{id}/recalculate", h.recalculate)
 		r.Post("/projects/{id}/files", h.uploadFile)
+		r.Get("/projects/{id}/underlay", h.getUnderlay)
 		r.Get("/projects/{id}/export", h.export)
 	})
 	return r
@@ -77,14 +80,22 @@ func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) lookupClimate(w http.ResponseWriter, r *http.Request) {
 	city := r.URL.Query().Get("city")
-	snow, wind := store.ClimateFromCity(city)
-	clim, rose := analytics.LookupClimate(city, snow, wind)
+	snow := r.URL.Query().Get("snowRegion")
+	wind := r.URL.Query().Get("windRegion")
+	res := analytics.LookupClimateFromSNiP(city, snow, wind)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"snowRegion": clim.SnowRegion,
-		"windRegion": clim.WindRegion,
-		"sg":         clim.Sg,
-		"w0":         clim.W0,
-		"windRose":   rose,
+		"norm":           res.Norm,
+		"month":          res.Month,
+		"monthLabel":     res.MonthLabel,
+		"matchedCity":    res.MatchedCity,
+		"matchQuality":   res.MatchQuality,
+		"snowRegion":     res.SnowRegion,
+		"windRegion":     res.WindRegion,
+		"sg":             res.Sg,
+		"w0":             res.W0,
+		"windRose":       res.WindRose,
+		"prevailingWind": res.Prevailing,
+		"prevailingLabel": analytics.PrevailingWindLabel(res.WindRose),
 	})
 }
 
@@ -278,6 +289,29 @@ func (h *Handler) listCalculations(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, history)
 }
 
+func (h *Handler) getCalculationRun(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid project id")
+		return
+	}
+	runID, err := uuid.Parse(chi.URLParam(r, "runId"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid run id")
+		return
+	}
+	run, err := h.store.GetCalculationRun(r.Context(), id, runID)
+	if err != nil {
+		if err.Error() == "calculation run not found" || err.Error() == "calculation not found" {
+			writeError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, run)
+}
+
 func (h *Handler) recalculate(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
@@ -354,6 +388,7 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	mime := header.Header.Get("Content-Type")
+	mime = normalizeUploadMime(mime, header.Filename)
 	key, err := h.s3.Upload(r.Context(), id, header.Filename, file, header.Size, mime)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -376,6 +411,46 @@ func (h *Handler) uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	h.store.Audit(r.Context(), &id, "file.upload", map[string]string{"name": header.Filename})
 	writeJSON(w, http.StatusCreated, pf)
+}
+
+func (h *Handler) getUnderlay(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid project id")
+		return
+	}
+	if _, err := h.store.GetProject(r.Context(), id); err != nil {
+		writeError(w, http.StatusNotFound, "project not found")
+		return
+	}
+	key, err := h.store.GetUnderlayKey(r.Context(), id)
+	if err != nil || key == "" {
+		writeError(w, http.StatusNotFound, "underlay not found")
+		return
+	}
+	if h.s3 == nil {
+		writeError(w, http.StatusServiceUnavailable, "storage not configured")
+		return
+	}
+	obj, err := h.s3.Open(r.Context(), key)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "underlay not found")
+		return
+	}
+	defer obj.Close()
+
+	info, err := obj.Stat()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if info.ContentType != "" {
+		w.Header().Set("Content-Type", info.ContentType)
+	} else {
+		w.Header().Set("Content-Type", "application/octet-stream")
+	}
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	_, _ = io.Copy(w, obj)
 }
 
 func (h *Handler) export(w http.ResponseWriter, r *http.Request) {
@@ -440,4 +515,26 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+
+func normalizeUploadMime(mime, filename string) string {
+	if mime != "" && mime != "application/octet-stream" {
+		return mime
+	}
+	lower := strings.ToLower(filename)
+	switch {
+	case strings.HasSuffix(lower, ".pdf"):
+		return "application/pdf"
+	case strings.HasSuffix(lower, ".png"):
+		return "image/png"
+	case strings.HasSuffix(lower, ".jpg"), strings.HasSuffix(lower, ".jpeg"):
+		return "image/jpeg"
+	case strings.HasSuffix(lower, ".webp"):
+		return "image/webp"
+	default:
+		if mime != "" {
+			return mime
+		}
+		return "application/octet-stream"
+	}
 }

@@ -68,8 +68,11 @@ function selectRun(projectId: string, run: CalculationRunItem) {
   selectedRunId.value[projectId] = run.id
 }
 
-async function openProject(id: string) {
-  await router.push({ name: 'wizard', params: { id } })
+async function openProject(p: ProjectListItem) {
+  const runId = selectedRunId.value[p.id]
+  const query: Record<string, string> = {}
+  if (runId) query.runId = runId
+  await router.push({ name: 'wizard', params: { id: p.id }, query })
 }
 
 async function newProject() {
@@ -232,7 +235,7 @@ function runTone(run: CalculationRunItem) {
                     >
                       {{ recalculating[p.id] ? 'Пересчёт…' : 'Пересчитать' }}
                     </button>
-                    <button type="button" class="btn accent" @click.stop="openProject(p.id)">
+                    <button type="button" class="btn accent" @click.stop="openProject(p)">
                       Открыть расчёт
                     </button>
                   </div>
