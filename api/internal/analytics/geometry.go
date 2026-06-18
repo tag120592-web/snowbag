@@ -162,7 +162,17 @@ func concaveVertices(roof [][]float64) []int {
 		if area < 0 && cross > 1e-6 {
 			out = append(out, i)
 		}
-		i++
+	}
+	return out
+}
+
+func ensureCCW(poly [][]float64) [][]float64 {
+	if len(poly) < 3 || signedArea(poly) > 0 {
+		return poly
+	}
+	out := make([][]float64, len(poly))
+	for i := range poly {
+		out[i] = poly[len(poly)-1-i]
 	}
 	return out
 }
@@ -183,7 +193,8 @@ func cornerZone(roof [][]float64, idx int, size float64) [][]float64 {
 	cur := roof[idx]
 	next := roof[(idx+1)%n]
 
-	v1x, v1y := prev[0]-cur[0], prev[1]-cur[1]
+	// Vectors along incoming and outgoing edges into the vertex (interior wedge at concave corner).
+	v1x, v1y := cur[0]-prev[0], cur[1]-prev[1]
 	v2x, v2y := next[0]-cur[0], next[1]-cur[1]
 	l1 := math.Hypot(v1x, v1y)
 	l2 := math.Hypot(v2x, v2y)

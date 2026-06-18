@@ -102,6 +102,9 @@ type CalculateRequest struct {
 	NorthDeg   float64         `json:"northDeg"`
 	SnowRegion string          `json:"snowRegion"`
 	WindRegion string          `json:"windRegion"`
+	ParapetMm  float64         `json:"parapetMm,omitempty"`
+	Ce         float64         `json:"ce,omitempty"`
+	Ct         float64         `json:"ct,omitempty"`
 	Geometry   json.RawMessage `json:"geometry"`
 	Climate    json.RawMessage `json:"climate"`
 	Sensors    []Sensor        `json:"sensors,omitempty"`
@@ -134,6 +137,9 @@ type CalculateInput struct {
 	SnowRegion string
 	WindRegion string
 	NorthDeg   float64
+	ParapetMm  float64
+	Ce         float64
+	Ct         float64
 	Geometry   GeometryData
 	WindRose   []WindRose
 	Sensors    []Sensor
@@ -148,14 +154,16 @@ type CalculationResult struct {
 }
 
 type Snowbag struct {
-	ID    string      `json:"id"`
-	Name  string      `json:"name"`
-	Basis string      `json:"basis"`
-	Poly  [][]float64 `json:"poly"`
-	Mu    float64     `json:"mu"`
-	Load  string      `json:"load"`
-	Area  int         `json:"area"`
-	Risk  string      `json:"risk"`
+	ID        string      `json:"id"`
+	Name      string      `json:"name"`
+	Basis     string      `json:"basis"`
+	Scheme    string      `json:"scheme,omitempty"`
+	RiskClass string      `json:"riskClass,omitempty"`
+	Poly      [][]float64 `json:"poly"`
+	Mu        float64     `json:"mu"`
+	Load      string      `json:"load"`
+	Area      int         `json:"area"`
+	Risk      string      `json:"risk"`
 }
 
 type Sensor struct {

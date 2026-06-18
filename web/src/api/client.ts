@@ -46,10 +46,19 @@ export async function deleteProject(id: string) {
   }
 }
 
-export function lookupClimate(city: string, snowRegion?: string, windRegion?: string) {
+export function lookupClimate(
+  city: string,
+  snowRegion?: string,
+  windRegion?: string,
+  coords?: { lat: number; lon: number },
+) {
   const params = new URLSearchParams({ city })
   if (snowRegion) params.set('snowRegion', snowRegion)
   if (windRegion) params.set('windRegion', windRegion)
+  if (coords && !snowRegion && !windRegion) {
+    params.set('lat', String(coords.lat))
+    params.set('lon', String(coords.lon))
+  }
   return request<ClimateLookupResult>(`/api/v1/climate?${params}`)
 }
 
@@ -59,6 +68,7 @@ export interface ClimateLookupResult {
   monthLabel: string
   matchedCity?: string
   matchQuality?: string
+  regionSource?: string
   snowRegion: string
   windRegion: string
   sg: number
