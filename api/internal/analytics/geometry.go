@@ -56,6 +56,16 @@ func pxToM2(pxArea float64, mpp float64) float64 {
 	return pxArea * mpp * mpp
 }
 
+// RoofAreaFromCanvasPolygon converts plan polygon area (SVG px) to m² using canvasPxPerM.
+func RoofAreaFromCanvasPolygon(roof [][]float64) float64 {
+	pxArea := polygonArea(roof)
+	if pxArea <= 0 {
+		return 0
+	}
+	mpp := 1 / canvasPxPerM
+	return pxToM2(pxArea, mpp)
+}
+
 func rectFromObstacle(o model.Obstacle) (Rect, bool) {
 	if o.Shape == "circle" && o.R > 0 {
 		r := o.R

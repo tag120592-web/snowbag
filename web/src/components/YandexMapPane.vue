@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { getPublicConfig } from '@/api/client'
 import { geocodeAddress } from '@/utils/geocode'
 import type { MapSelectPayload } from '@/types'
@@ -64,6 +64,9 @@ let map: InstanceType<NonNullable<typeof window.ymaps>['Map']> | null = null
 let placemark: unknown = null
 let scriptPromise: Promise<void> | null = null
 let viewportListener: (() => void) | null = null
+let resizeObserver: ResizeObserver | null = null
+/** Skip prop→map sync right after map→parent viewport emit (avoids breaking drag/zoom). */
+let suppressViewportApply = false
 
 function normalizeCity(city: string) {
   return city.trim().toLowerCase().replace(/^г\.?\s*/, '')
@@ -89,7 +92,29 @@ function mapCenter(): [number, number] {
 
 function emitViewport() {
   if (!map) return
+  suppressViewportApply = true
   emit('viewportChange', { zoom: map.getZoom(), center: mapCenter() })
+  void nextTick(() => { suppressViewportApply = false })
+}
+
+function viewportMatchesProps(): boolean {
+  if (!map) return true
+  const center = defaultCenter()
+  const zoom = props.zoom ?? map.getZoom()
+  const cur = map.getCenter()
+  return (
+    Math.abs(cur[0] - center[0]) < 1e-6
+    && Math.abs(cur[1] - center[1]) < 1e-6
+    && map.getZoom() === zoom
+  )
+}
+
+function bindResizeObserver() {
+  if (!mapEl.value || resizeObserver) return
+  resizeObserver = new ResizeObserver(() => {
+    map?.container.fitToViewport()
+  })
+  resizeObserver.observe(mapEl.value)
 }
 
 function loadYmapsScript(): Promise<void> {
@@ -157,6 +182,10 @@ function bindViewportEvents() {
 
 function applyViewportFromProps() {
   if (!map) return
+  if (viewportMatchesProps()) {
+    if (props.lat != null && props.lon != null) setPlacemark(props.lat, props.lon)
+    return
+  }
   const center = defaultCenter()
   const zoom = props.zoom ?? map.getZoom()
   map.setCenter(center, zoom, { duration: 0 })
@@ -210,6 +239,8 @@ async function initMap() {
       })
     }
     bindViewportEvents()
+    bindResizeObserver()
+    map.container.fitToViewport()
   } catch (e) {
     scriptPromise = null
     loadError.value = e instanceof Error ? e.message : 'Не удалось загрузить Яндекс.Карты'
@@ -236,7 +267,7 @@ async function geocode(query: string) {
 watch(
   () => [props.center, props.zoom, props.lat, props.lon] as const,
   () => {
-    if (!map) return
+    if (!map || suppressViewportApply) return
     applyViewportFromProps()
   },
 )
@@ -248,6 +279,8 @@ watch(interactive, (enabled) => {
 onMounted(() => { void initMap() })
 
 onUnmounted(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
   if (map) {
     if (viewportListener) {
       map.events.remove('boundschange', viewportListener)
@@ -281,9 +314,8 @@ defineExpose({ geocode })
   overflow: hidden;
   border: 1px solid var(--border-secondary-enabled);
   min-height: 360px;
-  touch-action: none;
 }
-.map-root { width: 100%; height: 100%; min-height: 360px; outline: none; }
+.map-root { width: 100%; height: 100%; min-height: 360px; outline: none; touch-action: none; }
 .map-error {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 24px; text-align: center; background: rgba(255,255,255,.92); color: var(--red-60);

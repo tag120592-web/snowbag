@@ -278,15 +278,16 @@ func (h *Handler) calculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result := analytics.Calculate(model.CalculateInput{
-		City:       project.City,
-		SnowRegion: snowRegion,
-		WindRegion: windRegion,
-		NorthDeg:   northDeg,
-		ParapetMm:  parapetMm,
-		Ce:         req.Ce,
-		Ct:         req.Ct,
-		Geometry:   geom,
-		Sensors:    req.Sensors,
+		City:             project.City,
+		SnowRegion:       snowRegion,
+		WindRegion:       windRegion,
+		NorthDeg:         northDeg,
+		ParapetMm:        parapetMm,
+		WindDirectionDeg: req.WindDirectionDeg,
+		Ce:               req.Ce,
+		Ct:               req.Ct,
+		Geometry:         geom,
+		Sensors:          req.Sensors,
 	})
 
 	geomJSON := store.GeometryJSON(geom)

@@ -59,7 +59,8 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 	}
 
 	northDeg := input.NorthDeg
-	bags := buildSnowbags(geom, sg, northDeg, parapetMm, ce, ct, windRose)
+	bags := buildSnowbags(geom, sg, northDeg, parapetMm, ce, ct, input.WindDirectionDeg, windRose)
+	loadGrid := calculateLoadGrid(geom, sg, northDeg, parapetMm, ce, ct, input.WindDirectionDeg, windRose, defaultCellSizeM)
 	sensors := placeSensors(bags, geom.Roof, geom.AreaM2, input.Sensors)
 
 	mpp := metersPerPixel(geom.Roof, geom.AreaM2)
@@ -73,10 +74,13 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 	for _, b := range bags {
 		bagsM2 += float64(b.Area)
 		risk[b.Risk]++
-		s := ce * ct * b.Mu * sg
+		s := sp20BaseLoad(sg, ce, ct, b.Mu)
 		if s > maxS {
 			maxS = s
 		}
+	}
+	if loadGrid != nil && loadGrid.MaxValueKpa > maxS {
+		maxS = loadGrid.MaxValueKpa
 	}
 	sd := 1.4 * maxS
 	share := 0.0
@@ -102,6 +106,7 @@ func Calculate(input model.CalculateInput) model.CalculationResult {
 		},
 		Spec:     buildSpec(len(sensors), avgDist),
 		WindRose: windRose,
+		LoadGrid: loadGrid,
 	}
 }
 

@@ -134,8 +134,28 @@ export interface CalculationData {
     avgDistM?: string
     risk: Record<string, number>
   }
-  spec?: Array<{ pos: number; name: string; unit: string; qty: number; note: string }>
+  spec?: Array<{ pos: number; ekn?: string; name: string; unit: string; qty: number; note: string }>
   windRose?: Array<{ dir: string; deg: number; v: number }>
+  loadGrid?: LoadGrid
+}
+
+export interface GridCell {
+  x: number
+  y: number
+  value_kpa: number
+}
+
+export interface LoadGrid {
+  grid: GridCell[]
+  width: number
+  height: number
+  cell_size_m: number
+  min_value_kpa: number
+  max_value_kpa: number
+  bounds: { min_x: number; max_x: number; min_y: number; max_y: number }
+  wind_direction_deg: number
+  local_wind_direction_deg?: number
+  north_direction_deg?: number
 }
 
 export const STEPS = [

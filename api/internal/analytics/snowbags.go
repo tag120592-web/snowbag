@@ -8,7 +8,12 @@ import (
 	"github.com/technonicol/snowbag/api/internal/model"
 )
 
-func buildSnowbags(geom model.GeometryData, sg, northDeg, parapetMm, ce, ct float64, windRose []model.WindRose) []model.Snowbag {
+func buildSnowbags(
+	geom model.GeometryData,
+	sg, northDeg, parapetMm, ce, ct float64,
+	windDirectionDeg *float64,
+	windRose []model.WindRose,
+) []model.Snowbag {
 	roof := geom.Roof
 	if len(roof) < 3 {
 		return nil
@@ -26,8 +31,9 @@ func buildSnowbags(geom model.GeometryData, sg, northDeg, parapetMm, ce, ct floa
 	parapetM := parapetMm / 1000
 
 	mpp := metersPerPixel(roof, geom.AreaM2)
-	transfers := rankTransferDirections(windRose, northDeg)
-	primary := primaryTransfer(windRose, northDeg)
+	windDeg := resolveWindDirectionDeg(windDirectionDeg, windRose)
+	sBase := sp20BaseLoad(sg, ce, ct, 1)
+	td := planTransferVector(windDeg, float64(prevailingWind(windRose).V), northDeg)
 
 	var raw []rawBag
 
@@ -57,14 +63,24 @@ func buildSnowbags(geom model.GeometryData, sg, northDeg, parapetMm, ce, ct floa
 			continue
 		}
 		hM := obstacleHeightM(o)
-		td := bestTransferForObstacle(rect, transfers, primary, roof, o, mpp)
-		depthPx := obstacleLeeDepthM(o) / mpp
+		_, zoneWidthM, driftOK := driftParameters(hM, sBase)
+		leeDepthM := obstacleLeeDepthM(o)
+		if driftOK && zoneWidthM > 0 {
+			leeDepthM = math.Max(zoneWidthM, leeDepthM)
+		}
+		depthPx := leeDepthM / mpp
 		lee := leeRectPoly(rect, depthPx, td)
 		poly := intersectPolyWithRoof(lee, roof)
 		if len(poly) < 3 {
 			continue
 		}
 		mu, scheme := obstacleMuAndScheme(o, hM)
+		if sBase > 0 && hM > sBase/2 {
+			driftMu := math.Min(2*hM/sBase, 3)
+			if driftMu > mu {
+				mu = driftMu
+			}
+		}
 		short := o.Short
 		if short == "" {
 			short = o.Type
@@ -78,8 +94,8 @@ func buildSnowbags(geom model.GeometryData, sg, northDeg, parapetMm, ce, ct floa
 		})
 	}
 
-	parapetDepthPx := parapetStripDepthM / mpp
 	seenEdges := map[int]bool{}
+	transfers := rankTransferDirections(windRose, northDeg)
 	for _, td := range transfers {
 		if td.Weight < 7 {
 			continue
@@ -88,26 +104,31 @@ func buildSnowbags(geom model.GeometryData, sg, northDeg, parapetMm, ce, ct floa
 			if seenEdges[eIdx] {
 				continue
 			}
+			h := edgeParapetHeightM(geom, eIdx, parapetM)
+			muMax, zoneWidthM, ok := driftParameters(h, sBase)
+			if !ok {
+				edgeLen := edgeLengthM(roof, eIdx, mpp)
+				muMax = parapetMu(h, edgeLen)
+				zoneWidthM = parapetStripDepthM
+			}
+			if muMax < 1.4 {
+				muMax = 1.4
+			}
 			seenEdges[eIdx] = true
-			strip := parapetStripPoly(roof, eIdx, parapetDepthPx)
+			depthPx := math.Max(zoneWidthM, parapetStripDepthM) / mpp
+			strip := parapetStripPoly(roof, eIdx, depthPx)
 			poly := intersectPolyWithRoof(strip, roof)
 			if len(poly) < 3 {
 				continue
 			}
-			edgeLen := edgeLengthM(roof, eIdx, mpp)
-			mu := parapetMu(parapetM, edgeLen)
 			label := compassLabel(edgeAzimuth(roof, eIdx, northDeg))
-			name := "Парапет (" + label + ")"
-			basis := "Снос снега к парапету, μ по п. 10.4 СП 20"
-			if td.Weight >= transfers[0].Weight*0.85 {
-				name = "Подветренный парапет (" + label + ")"
-			}
+			name := "Подветренный парапет (" + label + ")"
 			raw = append(raw, rawBag{
 				name:      name,
-				basis:     basis,
-				scheme:    "B.13",
+				basis:     fmt.Sprintf("Снеговой мешок у парапета, h=%.1f м, схема Б.16", h),
+				scheme:    "B.16",
 				poly:      poly,
-				mu:        mu,
+				mu:        muMax,
 				edgeLabel: label,
 			})
 		}
@@ -124,29 +145,18 @@ func skipObstacle(o model.Obstacle) bool {
 		strings.Contains(t, "корзин")
 }
 
-func bestTransferForObstacle(rect Rect, transfers []TransferDir, fallback TransferDir, roof [][]float64, o model.Obstacle, mpp float64) TransferDir {
-	if len(transfers) == 0 {
-		return fallback
+func parapetMu(parapetM, edgeLenM float64) float64 {
+	mu := 1.4
+	if parapetM >= 1.2 {
+		mu = 1.6
 	}
-	best := transfers[0]
-	bestArea := 0.0
-	depthPx := obstacleLeeDepthM(o) / mpp
-	for _, td := range transfers {
-		if td.Weight < 7 {
-			continue
-		}
-		lee := leeRectPoly(rect, depthPx, td)
-		clipped := intersectPolyWithRoof(lee, roof)
-		if len(clipped) < 3 {
-			continue
-		}
-		a := polygonArea(clipped)
-		if a > bestArea {
-			bestArea = a
-			best = td
-		}
+	if edgeLenM > 24 {
+		mu += 0.2
 	}
-	return best
+	if mu > 1.8 {
+		return 1.8
+	}
+	return mu
 }
 
 func obstacleMuAndScheme(o model.Obstacle, hM float64) (mu float64, scheme string) {
@@ -166,20 +176,6 @@ func obstacleMuAndScheme(o model.Obstacle, hM float64) (mu float64, scheme strin
 		}
 		return mu, "B.12"
 	}
-}
-
-func parapetMu(parapetM, edgeLenM float64) float64 {
-	mu := 1.4
-	if parapetM >= 1.2 {
-		mu = 1.6
-	}
-	if edgeLenM > 24 {
-		mu += 0.2
-	}
-	if mu > 1.8 {
-		return 1.8
-	}
-	return mu
 }
 
 func edgeAzimuth(roof [][]float64, edgeIdx int, northDeg float64) float64 {

@@ -55,6 +55,29 @@ export function pxToM(px: number, pxPerM = PX_PER_M): number {
   return px / pxPerM
 }
 
+export function polygonAreaPx(points: number[][]): number {
+  if (points.length < 3) return 0
+  let sum = 0
+  for (let i = 0; i < points.length; i += 1) {
+    const [x1, y1] = points[i]
+    const [x2, y2] = points[(i + 1) % points.length]
+    sum += x1 * y2 - x2 * y1
+  }
+  return Math.abs(sum) / 2
+}
+
+/** Roof area in m² from plan polygon (SVG px coordinates). */
+export function roofAreaM2FromPoints(points: number[][]): number {
+  const pxArea = polygonAreaPx(points)
+  if (pxArea <= 0) return 0
+  return pxArea / (PX_PER_M * PX_PER_M)
+}
+
+export function formatRoofAreaM2(areaM2?: number | null): string {
+  if (areaM2 == null || areaM2 <= 0) return '—'
+  return `${Math.round(areaM2).toLocaleString('ru-RU')} м²`
+}
+
 export function formatLengthM(px: number, pxPerM = PX_PER_M): string {
   const m = pxToM(px, pxPerM)
   if (m < 10) return `${m.toFixed(1).replace('.', ',')} м`
@@ -272,6 +295,10 @@ export function bagPolyBBox(poly: number[][]): { x: number; y: number; w: number
 
 export function bboxToBagPoly(x: number, y: number, w: number, h: number): number[][] {
   return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]
+}
+
+export function moveBagPoly(poly: number[][], dx: number, dy: number): number[][] {
+  return poly.map(([x, y]) => [x + dx, y + dy])
 }
 
 export function resizeBagPoly(
