@@ -3,11 +3,13 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/technonicol/snowbag/api/internal/model"
 )
@@ -241,6 +243,32 @@ func (s *Store) GetUnderlayKey(ctx context.Context, projectID uuid.UUID) (string
 	var key string
 	err := s.pool.QueryRow(ctx, `SELECT underlay_key FROM projects WHERE id = $1`, projectID).Scan(&key)
 	return key, err
+}
+
+func (s *Store) GetUnderlayFile(ctx context.Context, projectID uuid.UUID) (*model.ProjectFile, error) {
+	key, err := s.GetUnderlayKey(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if key == "" {
+		return nil, nil
+	}
+	var f model.ProjectFile
+	err = s.pool.QueryRow(ctx, `
+		SELECT id, project_id, name, mime_type, size_bytes, created_at
+		FROM project_files
+		WHERE project_id = $1 AND storage_key = $2
+		ORDER BY created_at DESC
+		LIMIT 1`, projectID, key).Scan(
+		&f.ID, &f.ProjectID, &f.Name, &f.MimeType, &f.Size, &f.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &f, nil
 }
 
 func (s *Store) ListProjectStorageKeys(ctx context.Context, projectID uuid.UUID) ([]string, error) {

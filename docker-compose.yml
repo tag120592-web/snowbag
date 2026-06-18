@@ -63,6 +63,8 @@ services:
 
   api:
     build: ./api
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     environment:
@@ -83,7 +85,10 @@ services:
         condition: service_healthy
 
   web:
-    build: ./web
+    build:
+      context: ./web
+      args:
+        VITE_YANDEX_MAPS_API_KEY: ${VITE_YANDEX_MAPS_API_KEY:-}
     ports:
       - "3000:80"
     depends_on:

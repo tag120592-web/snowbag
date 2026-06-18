@@ -6,6 +6,11 @@ declare module '*.vue' {
   export default component
 }
 
+declare module '*?url' {
+  const url: string
+  export default url
+}
+
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string
   readonly VITE_YANDEX_MAPS_API_KEY?: string

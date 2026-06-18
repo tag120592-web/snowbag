@@ -43,6 +43,8 @@ func (h *Handler) Routes() http.Handler {
 
 	r.Get("/health", h.health)
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/config", h.publicConfig)
+		r.Get("/geocode", h.geocode)
 		r.Get("/climate", h.lookupClimate)
 		r.Get("/projects", h.listProjects)
 		r.Post("/projects", h.createProject)
@@ -58,6 +60,12 @@ func (h *Handler) Routes() http.Handler {
 		r.Get("/projects/{id}/export", h.export)
 	})
 	return r
+}
+
+func (h *Handler) publicConfig(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{
+		"yandexMapsApiKey": h.cfg.YandexMapsAPIKey,
+	})
 }
 
 func (h *Handler) health(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +146,10 @@ func (h *Handler) loadProjectWithUnderlay(r *http.Request, id uuid.UUID) (*model
 				p.UnderlayURL = url
 			}
 		}
+	}
+	if uf, err := h.store.GetUnderlayFile(r.Context(), id); err == nil && uf != nil {
+		p.UnderlayName = uf.Name
+		p.UnderlayMimeType = uf.MimeType
 	}
 	return p, nil
 }
@@ -449,6 +461,7 @@ func (h *Handler) getUnderlay(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
+	w.Header().Set("Content-Disposition", "inline")
 	w.Header().Set("Cache-Control", "private, max-age=3600")
 	_, _ = io.Copy(w, obj)
 }

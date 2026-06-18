@@ -66,6 +66,8 @@ export interface Project extends ProjectListItem {
   climate: Record<string, string>
   calculation: CalculationData
   underlayUrl?: string
+  underlayName?: string
+  underlayMimeType?: string
 }
 
 export interface GeometryData {

@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import * as pdfjsLib from 'pdfjs-dist'
 import { computed, nextTick, ref, watch } from 'vue'
 import YandexMapPane from '@/components/YandexMapPane.vue'
 import type { MapSelectPayload } from '@/types'
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString()
+import {
+  loadPdfFromFile,
+  pdfPageFileName,
+  renderPageToBlob,
+  renderPageToCanvas,
+  renderPageToDataUrl,
+  type PdfDocument,
+} from '@/utils/pdfPage'
+import { inferUnderlayMime, isDwgMime, isPdfMime } from '@/utils/underlayMime'
 
 export interface UploadedFileItem {
   name: string
   size: string
   desc: string
   selected?: boolean
+  page?: number
 }
 
 const props = defineProps<{
@@ -26,6 +30,9 @@ const props = defineProps<{
   mapCity?: string
   mapSelected: boolean
   underlaySrc: string
+  underlayMimeType?: string
+  underlayPage?: number | null
+  pdfPickFile?: File | null
   previewUnavailable: string
   uploading: boolean
 }>()
@@ -33,6 +40,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   fileSelect: [file: File]
   mapSelect: [payload: MapSelectPayload]
+  pdfPageConfirm: [payload: { page: number; file: File }]
+  pdfPickCancel: []
 }>()
 
 const tab = ref<'file' | 'map'>('file')
@@ -45,6 +54,14 @@ const pdfCanvas = ref<HTMLCanvasElement | null>(null)
 const previewError = ref('')
 const dragOver = ref(false)
 
+const pdfLoading = ref(false)
+const pdfConfirming = ref(false)
+const pdfError = ref('')
+const pdfDoc = ref<PdfDocument | null>(null)
+const pdfPageCount = ref(0)
+const pdfSelectedPage = ref(1)
+const pdfThumbnails = ref<Record<number, string>>({})
+
 watch(() => props.mapAddress, (v) => { address.value = v })
 
 const previewFileName = computed(() => {
@@ -52,43 +69,157 @@ const previewFileName = computed(() => {
   return f?.name ?? ''
 })
 
-const isPdfPreview = computed(() => /\.pdf$/i.test(previewFileName.value))
-const isDwgPreview = computed(() => /\.(dwg|dxf)$/i.test(previewFileName.value))
+const effectiveMimeType = computed(() =>
+  inferUnderlayMime(previewFileName.value, props.underlayMimeType),
+)
 
-const hasFile = () => props.files.length > 0 || !!props.underlaySrc || !!props.previewUnavailable
+const isPdfPreview = computed(() =>
+  isPdfMime(effectiveMimeType.value) || /\.pdf$/i.test(previewFileName.value),
+)
+const isDwgPreview = computed(() =>
+  isDwgMime(effectiveMimeType.value) || /\.(dwg|dxf)$/i.test(previewFileName.value),
+)
+
+const displayPage = computed(() => {
+  if (props.pdfPickFile) return pdfSelectedPage.value
+  const fromFile = props.files.find((f) => f.selected)?.page ?? props.files[0]?.page
+  return fromFile ?? props.underlayPage ?? 1
+})
+
+const isPdfPicking = computed(() => !!props.pdfPickFile)
+const hasFile = () => props.files.length > 0 || !!props.underlaySrc || !!props.previewUnavailable || isPdfPicking.value
 const showFilePreview = () => !props.isFresh || hasFile()
 
-async function renderPdfPreview(url: string) {
-  await nextTick()
-  const canvas = pdfCanvas.value
-  if (!canvas) return
-  previewError.value = ''
+let pdfLoadToken = 0
+
+async function loadPdfPickState(file: File) {
+  const token = ++pdfLoadToken
+  pdfLoading.value = true
+  pdfError.value = ''
+  pdfThumbnails.value = {}
+  pdfPageCount.value = 0
+  pdfSelectedPage.value = 1
+  pdfDoc.value = null
+
   try {
-    const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise
-    const page = await pdf.getPage(1)
-    const baseViewport = page.getViewport({ scale: 1 })
-    const maxW = 560
-    const maxH = 380
-    const scale = Math.min(maxW / baseViewport.width, maxH / baseViewport.height, 2)
-    const viewport = page.getViewport({ scale })
-    canvas.width = viewport.width
-    canvas.height = viewport.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) throw new Error('canvas unavailable')
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise
-  } catch {
-    previewError.value = 'Не удалось отобразить PDF. Проверьте, что API и хранилище файлов доступны.'
+    const pdf = await loadPdfFromFile(file)
+    if (token !== pdfLoadToken) return
+    pdfDoc.value = pdf
+    pdfPageCount.value = pdf.numPages
+
+    const thumbs: Record<number, string> = {}
+    for (let i = 1; i <= pdf.numPages; i += 1) {
+      if (token !== pdfLoadToken) return
+      thumbs[i] = await renderPageToDataUrl(pdf, i, 160)
+      pdfThumbnails.value = { ...thumbs }
+    }
+    await renderPickPreview()
+  } catch (err) {
+    if (token !== pdfLoadToken) return
+    pdfError.value = err instanceof Error ? err.message : 'Не удалось открыть PDF'
+  } finally {
+    if (token === pdfLoadToken) pdfLoading.value = false
+  }
+}
+
+async function renderPickPreview() {
+  if (!pdfDoc.value) return
+  previewError.value = ''
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await nextTick()
+    if (!pdfCanvas.value) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      continue
+    }
+    try {
+      await renderPageToCanvas(pdfDoc.value, pdfSelectedPage.value, pdfCanvas.value, 560)
+      return
+    } catch (err) {
+      if (attempt === 9) {
+        previewError.value = err instanceof Error ? err.message : 'Не удалось показать лист'
+      }
+    }
+  }
+}
+
+async function renderPdfPreview(url: string) {
+  previewError.value = ''
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await nextTick()
+    if (!pdfCanvas.value) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      continue
+    }
+    try {
+      let data: ArrayBuffer
+      if (url.startsWith('blob:')) {
+        data = await (await fetch(url)).arrayBuffer()
+      } else {
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        data = await res.arrayBuffer()
+      }
+      const pdf = await loadPdfFromFile(new File([data], 'underlay.pdf', { type: 'application/pdf' }))
+      await renderPageToCanvas(pdf, 1, pdfCanvas.value, 560)
+      return
+    } catch (err) {
+      if (attempt === 9) {
+        console.error('PDF preview failed:', err)
+        previewError.value = 'Не удалось показать PDF. Перезагрузите файл для выбора листа.'
+      }
+    }
   }
 }
 
 watch(
-  () => [props.underlaySrc, isPdfPreview.value] as const,
-  ([src, isPdf]) => {
-    previewError.value = ''
-    if (src && isPdf) void renderPdfPreview(src)
+  () => props.pdfPickFile,
+  (file) => {
+    if (file) void loadPdfPickState(file)
+    else {
+      pdfLoadToken += 1
+      pdfLoading.value = false
+      pdfDoc.value = null
+      pdfThumbnails.value = {}
+      pdfPageCount.value = 0
+    }
   },
   { immediate: true },
 )
+
+watch(pdfSelectedPage, () => {
+  if (isPdfPicking.value) void renderPickPreview()
+})
+
+watch(
+  () => [props.underlaySrc, isPdfPreview.value, isPdfPicking.value] as const,
+  ([src, isPdf, picking]) => {
+    if (picking || !src || !isPdf) return
+    void renderPdfPreview(src)
+  },
+  { immediate: true },
+)
+
+function selectPdfPage(page: number) {
+  pdfSelectedPage.value = page
+}
+
+async function confirmPdfPage() {
+  if (!props.pdfPickFile || !pdfDoc.value || pdfConfirming.value) return
+  pdfConfirming.value = true
+  pdfError.value = ''
+  try {
+    const blob = await renderPageToBlob(pdfDoc.value, pdfSelectedPage.value)
+    const name = pdfPageFileName(props.pdfPickFile.name, pdfSelectedPage.value)
+    emit('pdfPageConfirm', {
+      page: pdfSelectedPage.value,
+      file: new File([blob], name, { type: 'image/png' }),
+    })
+  } catch (err) {
+    pdfError.value = err instanceof Error ? err.message : 'Не удалось подготовить лист'
+  } finally {
+    pdfConfirming.value = false
+  }
+}
 
 function onFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]
@@ -164,7 +295,7 @@ function onImageError() {
                 <p>{{ previewUnavailable || 'Превью для DWG/DXF недоступно. Файл сохранён — конвертация будет в следующей версии.' }}</p>
               </div>
             </template>
-            <template v-else-if="isPdfPreview && underlaySrc">
+            <template v-else-if="isPdfPicking || (isPdfPreview && underlaySrc)">
               <canvas ref="pdfCanvas" class="pdf-canvas" />
             </template>
             <img
@@ -176,8 +307,10 @@ function onImageError() {
             />
             <div v-else class="preview-placeholder">Предпросмотр чертежа</div>
             <p v-if="previewError" class="preview-error">{{ previewError }}</p>
-            <div v-if="files[0]" class="caption">
-              {{ files.find((f) => f.selected)?.name || files[0].name }} · лист 1 · план кровли
+            <div v-if="files[0] || pdfPickFile" class="caption">
+              {{ pdfPickFile?.name || files.find((f) => f.selected)?.name || files[0]?.name }}
+              · лист {{ displayPage }}<template v-if="pdfPageCount"> из {{ pdfPageCount }}</template>
+              · план кровли
             </div>
           </div>
           <div v-else class="empty">
@@ -202,35 +335,71 @@ function onImageError() {
 
     <aside class="upload-panel">
       <template v-if="tab === 'file'">
-        <h3 class="panel-title">Источник данных</h3>
-        <label
-          class="dropzone"
-          :class="{ 'drag-over': dragOver }"
-          @drop="onDrop"
-          @dragover="onDragOver"
-          @dragleave="onDragLeave"
-        >
-          <input ref="fileRef" type="file" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf" hidden @change="onFileChange" />
-          <div class="drop-icon">⬆</div>
-          <div class="drop-title">Перетащите файл сюда</div>
-          <div class="drop-hint">PDF, DWG, DXF, JPG, PNG · до 100 МБ</div>
-          <button type="button" class="btn" @click.prevent="fileRef?.click()">Выбрать файл</button>
-          <span v-if="uploading" class="uploading">Загрузка…</span>
-        </label>
-
-        <template v-if="files.length">
-          <h3 class="panel-title">Загруженные файлы · {{ files.length }}</h3>
-          <ul class="file-list">
-            <li v-for="(f, i) in files" :key="i" class="file-item" :class="{ selected: f.selected }">
-              <span class="file-name">{{ f.name }}</span>
-              <span class="file-meta">{{ f.size }} · {{ f.desc }}</span>
-            </li>
-          </ul>
+        <template v-if="isPdfPicking">
+          <h3 class="panel-title">Выберите лист</h3>
+          <p class="panel-hint">В рабочей области будет показан только выбранный лист.</p>
+          <div v-if="pdfLoading" class="picker-state">Загрузка страниц…</div>
+          <div v-else-if="pdfError" class="picker-state error">{{ pdfError }}</div>
+          <div v-else class="thumb-grid">
+            <button
+              v-for="page in pdfPageCount"
+              :key="page"
+              type="button"
+              class="thumb"
+              :class="{ selected: pdfSelectedPage === page }"
+              @click="selectPdfPage(page)"
+            >
+              <img v-if="pdfThumbnails[page]" :src="pdfThumbnails[page]" :alt="`Лист ${page}`" />
+              <span v-else class="thumb-placeholder">{{ page }}</span>
+              <span class="thumb-label">Лист {{ page }}</span>
+            </button>
+          </div>
+          <div class="picker-actions">
+            <button type="button" class="btn" @click="emit('pdfPickCancel')">Отмена</button>
+            <button
+              type="button"
+              class="btn accent"
+              :disabled="pdfLoading || pdfConfirming || !pdfDoc"
+              @click="confirmPdfPage"
+            >
+              {{ pdfConfirming ? 'Подготовка…' : `Использовать лист ${pdfSelectedPage}` }}
+            </button>
+          </div>
         </template>
 
-        <div v-if="scale" class="info-box">
-          Масштаб распознан по штампу чертежа: <strong>{{ scale }}</strong>. При необходимости задайте вручную по известному размеру.
-        </div>
+        <template v-else>
+          <h3 class="panel-title">Источник данных</h3>
+          <label
+            class="dropzone"
+            :class="{ 'drag-over': dragOver }"
+            @drop="onDrop"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
+          >
+            <input ref="fileRef" type="file" accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf" hidden @change="onFileChange" />
+            <div class="drop-icon">⬆</div>
+            <div class="drop-title">Перетащите файл сюда</div>
+            <div class="drop-hint">PDF, DWG, DXF, JPG, PNG · до 100 МБ</div>
+            <button type="button" class="btn" @click.prevent="fileRef?.click()">Выбрать файл</button>
+            <span v-if="uploading" class="uploading">Загрузка…</span>
+          </label>
+
+          <template v-if="files.length">
+            <h3 class="panel-title">Загруженные файлы · {{ files.length }}</h3>
+            <ul class="file-list">
+              <li v-for="(f, i) in files" :key="i" class="file-item" :class="{ selected: f.selected }">
+                <span class="file-name">{{ f.name }}</span>
+                <span class="file-meta">
+                  {{ f.size }} · {{ f.desc }}<template v-if="f.page"> · лист {{ f.page }}</template>
+                </span>
+              </li>
+            </ul>
+          </template>
+
+          <div v-if="scale" class="info-box">
+            Масштаб распознан по штампу чертежа: <strong>{{ scale }}</strong>. При необходимости задайте вручную по известному размеру.
+          </div>
+        </template>
       </template>
 
       <template v-else>
@@ -300,27 +469,35 @@ function onImageError() {
 .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .5; }
 .empty-title { font-size: 15px; font-weight: 600; color: var(--content-secondary-enabled); margin-bottom: 6px; }
 .empty-text { font-size: 13px; color: var(--content-tertiary-enabled); line-height: 1.5; margin: 0; }
-.map-pane {
-  flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
-  margin: 20px; border-radius: var(--radius-lg); overflow: hidden;
-  border: 1px solid var(--border-secondary-enabled);
-  background: repeating-linear-gradient(45deg, #eef0f4, #eef0f4 12px, #e7e9ef 12px, #e7e9ef 24px);
-}
-.map-glow { position: absolute; inset: 0; background: radial-gradient(circle at 60% 45%, rgba(225,27,17,.10), transparent 40%); }
-.map-pin { position: absolute; top: 42%; left: 60%; font-size: 32px; }
-.map-search {
-  position: absolute; top: 16px; left: 16px; right: 16px; display: flex; gap: 8px;
-}
-.map-input {
-  flex: 1; height: 48px; padding: 0 14px; border: 1px solid var(--border-secondary-enabled);
-  border-radius: var(--radius-md); font: inherit;
-}
-.map-label { font-family: monospace; font-size: 12px; color: var(--neutral-55); }
 .upload-panel {
   width: 380px; flex: 0 0 380px; border-left: 1px solid var(--border-secondary-enabled);
   background: #fff; padding: 0 0 20px; overflow-y: auto;
 }
 .panel-title { margin: 18px 20px 12px; font-size: 15px; font-weight: 700; }
+.panel-hint { margin: 0 20px 12px; font-size: 12.5px; color: var(--content-secondary-enabled); line-height: 1.45; }
+.picker-state { margin: 0 20px 12px; padding: 16px; text-align: center; font-size: 13px; color: var(--content-secondary-enabled); }
+.picker-state.error { color: var(--red-60); }
+.thumb-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
+  margin: 0 20px 12px; max-height: 420px; overflow-y: auto;
+}
+.thumb {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px;
+  border: 2px solid var(--border-secondary-enabled); border-radius: 8px;
+  background: var(--neutral-10); cursor: pointer; font: inherit;
+}
+.thumb.selected { border-color: var(--red-60); background: var(--red-10); }
+.thumb img {
+  display: block; width: 100%; height: 110px; object-fit: contain;
+  background: #fff; border-radius: 4px;
+}
+.thumb-placeholder {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 110px;
+  background: #fff; border-radius: 4px; font-weight: 700; color: var(--content-tertiary-enabled);
+}
+.thumb-label { font-size: 12px; font-weight: 600; color: var(--content-secondary-enabled); }
+.picker-actions { display: flex; gap: 8px; margin: 0 20px; }
+.picker-actions .btn { flex: 1; }
 .dropzone {
   display: block; margin: 0 20px 16px; padding: 22px 18px; text-align: center; cursor: pointer;
   border: 1.5px dashed var(--border-secondary-enabled); border-radius: var(--radius-lg); background: var(--neutral-10);
@@ -353,6 +530,7 @@ function onImageError() {
   height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border-secondary-enabled);
   background: #fff; font-weight: 600; cursor: pointer; font-size: 14px;
 }
+.btn:disabled { opacity: 0.5; cursor: default; }
 .btn.accent { background: var(--red-60); color: #fff; border-color: var(--red-60); }
 .btn.block { display: block; width: calc(100% - 40px); margin: 0 20px 12px; }
 .ok-box {

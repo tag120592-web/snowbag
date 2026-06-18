@@ -28,8 +28,10 @@ type Project struct {
 	Geometry    json.RawMessage `json:"geometry"`
 	Climate     json.RawMessage `json:"climate"`
 	Calculation json.RawMessage `json:"calculation"`
-	UnderlayURL string          `json:"underlayUrl,omitempty"`
-	CreatedAt   time.Time       `json:"createdAt"`
+	UnderlayURL      string `json:"underlayUrl,omitempty"`
+	UnderlayName     string `json:"underlayName,omitempty"`
+	UnderlayMimeType string `json:"underlayMimeType,omitempty"`
+	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt   time.Time       `json:"updatedAt"`
 }
 

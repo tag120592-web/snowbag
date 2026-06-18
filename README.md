@@ -40,6 +40,12 @@ npm run dev
 
 Frontend на http://localhost:5173 проксирует API на :8080 (инфраструктура должна быть запущена).
 
+### Яндекс.Карты (шаг «Адрес на карте»)
+
+1. Получите ключ [JavaScript API и HTTP Геокодер](https://developer.tech.yandex.ru/) в кабинете разработчика Яндекса.
+2. **Локально:** скопируйте `web/.env.example` → `web/.env`, задайте `VITE_YANDEX_MAPS_API_KEY=ваш_ключ`, перезапустите `npm run dev`.
+3. **Docker:** задайте `YANDEX_MAPS_API_KEY=ваш_ключ` в корневом `.env` и выполните `docker compose up -d api` (пересборка web не нужна — ключ отдаёт API).
+
 ## MVP v0.2 — что реализовано
 
 - Список проектов с данными из PostgreSQL

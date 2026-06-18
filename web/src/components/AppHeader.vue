@@ -20,7 +20,11 @@ const emit = defineEmits<{ home: [] }>()
       <div class="divider" />
       <div class="project">
         <span class="project-name">{{ project.name }}</span>
-        <span v-if="project.address" class="project-address">· {{ project.address }}</span>
+        <span
+          v-if="project.address && project.address !== 'Укажите адрес объекта'"
+          class="project-address"
+          :title="project.address"
+        >· {{ project.address }}</span>
       </div>
     </template>
 
@@ -70,9 +74,9 @@ const emit = defineEmits<{ home: [] }>()
 .title { font-size: 15px; font-weight: 700; }
 .subtitle { font-size: 11px; color: var(--content-tertiary-enabled); }
 .divider { width: 1px; height: 26px; background: var(--border-secondary-enabled); }
-.project { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 14px; }
-.project-name { font-weight: 600; white-space: nowrap; }
-.project-address { color: var(--content-tertiary-enabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; max-width: min(42vw, 520px); font-size: 14px; line-height: 1.25; }
+.project-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.project-address { color: var(--content-tertiary-enabled); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-size: 12px; }
 .spacer { flex: 1; }
 .user { display: flex; align-items: center; gap: 10px; }
 .avatar {

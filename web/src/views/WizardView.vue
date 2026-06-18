@@ -32,6 +32,8 @@ import {
 } from '@/types'
 import type { DrawSession, EditTarget } from '@/composables/useRoofDrawing'
 import { formatParapetMm, parseParapetMm } from '@/composables/useRoofDrawing'
+import { parseUnderlayPageFromName } from '@/utils/pdfPage'
+import { inferUnderlayMime, isDwgMime } from '@/utils/underlayMime'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,6 +58,11 @@ const underlayUrl = ref('')
 const hasUnderlay = ref(false)
 const showUnderlay = ref(false)
 const previewUnavailable = ref('')
+const underlayMimeType = ref('')
+const underlayPage = ref<number | null>(null)
+const localUnderlayUrl = ref('')
+const underlayVersion = ref(0)
+const pdfPickerFile = ref<File | null>(null)
 const editTarget = ref<EditTarget | null>(null)
 const drawSession = ref<DrawSession | null>(null)
 const addDialogOpen = ref(false)
@@ -75,8 +82,10 @@ const projectId = computed(() => route.params.id as string | undefined)
 const runId = computed(() => route.query.runId as string | undefined)
 
 const underlaySrc = computed(() => {
+  if (localUnderlayUrl.value) return localUnderlayUrl.value
   if (!projectId.value || !hasUnderlay.value) return ''
-  return projectUnderlayUrl(projectId.value)
+  const v = underlayVersion.value
+  return `${projectUnderlayUrl(projectId.value)}${v ? `?v=${v}` : ''}`
 })
 
 onMounted(async () => {
@@ -128,9 +137,23 @@ function applyProjectMeta() {
   } else {
     geometry.value = { ...EMPTY_GEOMETRY, obstacles: [] }
   }
+  const underlayName = project.value.underlayName || 'План кровли'
+  const resolvedMime = inferUnderlayMime(underlayName, project.value.underlayMimeType)
+  const parsedPage = parseUnderlayPageFromName(underlayName)
+  underlayPage.value = parsedPage
+  const underlayDesc = isDwgMime(resolvedMime) || /\.(dwg|dxf)$/i.test(underlayName)
+    ? 'узел / чертёж'
+    : 'план кровли'
   uploadedFiles.value = project.value.underlayUrl
-    ? [{ name: 'План кровли', size: '—', desc: 'план кровли', selected: true }]
+    ? [{
+      name: underlayName,
+      size: '—',
+      desc: underlayDesc,
+      selected: true,
+      page: parsedPage ?? undefined,
+    }]
     : []
+  underlayMimeType.value = resolvedMime
   uploadScale.value = project.value.underlayUrl ? '1:200' : null
   mapAddress.value = project.value.address || ''
   mapLat.value = project.value.lat ?? null
@@ -143,6 +166,7 @@ function applyProjectMeta() {
   northDeg.value = project.value.northDeg ?? -18
   parapetMm.value = parseParapetMm(project.value.parapet)
   hasUnderlay.value = !!project.value.underlayUrl
+  if (hasUnderlay.value) underlayVersion.value += 1
   underlayUrl.value = project.value.underlayUrl || ''
 }
 
@@ -277,29 +301,83 @@ async function runCalculate() {
 
 async function onFileSelect(file: File) {
   if (!projectId.value || archiveView.value) return
+  error.value = ''
+  previewUnavailable.value = ''
+
+  if (/\.pdf$/i.test(file.name)) {
+    pdfPickerFile.value = file
+    return
+  }
+
+  await uploadUnderlayFile(file)
+}
+
+function onPdfPickerCancel() {
+  pdfPickerFile.value = null
+}
+
+async function onPdfPageConfirm(payload: { page: number; file: File }) {
+  pdfPickerFile.value = null
+  underlayPage.value = payload.page
+  await uploadUnderlayFile(payload.file, { page: payload.page })
+}
+
+async function uploadUnderlayFile(file: File, meta?: { page?: number }) {
+  if (!projectId.value || archiveView.value) return
   uploading.value = true
   error.value = ''
   previewUnavailable.value = ''
   const isDwg = /\.(dwg|dxf)$/i.test(file.name)
+  const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp)$/i.test(file.name)
+  if (!isDwg && isImage) {
+    if (localUnderlayUrl.value) URL.revokeObjectURL(localUnderlayUrl.value)
+    localUnderlayUrl.value = URL.createObjectURL(file)
+    hasUnderlay.value = true
+    underlayMimeType.value = inferUnderlayMime(file.name, file.type)
+  }
   try {
     await uploadProjectFile(projectId.value, file)
     if (isDwg) {
       hasUnderlay.value = false
       underlayUrl.value = ''
+      underlayPage.value = null
       previewUnavailable.value = 'Превью для DWG/DXF недоступно. Файл сохранён — конвертация будет в следующей версии.'
     } else {
       hasUnderlay.value = true
       underlayUrl.value = projectUnderlayUrl(projectId.value)
+      underlayVersion.value += 1
     }
+    underlayMimeType.value = inferUnderlayMime(file.name, file.type)
+    const uploadedName = file.name
+    const uploadedMime = underlayMimeType.value
+    const page = meta?.page ?? parseUnderlayPageFromName(uploadedName) ?? undefined
+    if (page != null) underlayPage.value = page
     uploadedFiles.value = [{
-      name: file.name,
+      name: uploadedName,
       size: formatFileSize(file.size),
       desc: isDwg ? 'узел / чертёж' : 'план кровли',
       selected: true,
+      page,
     }]
-    if (/\.pdf$/i.test(file.name)) uploadScale.value = '1:200'
-    else if (!isDwg && file.type.startsWith('image/')) uploadScale.value = uploadScale.value ?? '1:200'
+    if (isImage) uploadScale.value = uploadScale.value ?? '1:200'
+    if (meta?.page != null) uploadScale.value = '1:200'
     await loadProject()
+    if (hasUnderlay.value && uploadedFiles.value.length) {
+      uploadedFiles.value = [{
+        ...uploadedFiles.value[0],
+        name: project.value?.underlayName || uploadedName,
+        size: formatFileSize(file.size),
+        page: underlayPage.value ?? page,
+      }]
+      underlayMimeType.value = inferUnderlayMime(
+        project.value?.underlayName || uploadedName,
+        project.value?.underlayMimeType || uploadedMime,
+      )
+      if (localUnderlayUrl.value) {
+        URL.revokeObjectURL(localUnderlayUrl.value)
+        localUnderlayUrl.value = ''
+      }
+    }
     if (isDwg) {
       hasUnderlay.value = false
       previewUnavailable.value = 'Превью для DWG/DXF недоступно. Файл сохранён — конвертация будет в следующей версии.'
@@ -609,10 +687,15 @@ const hasWalkway = computed(() => !!(geometry.value.walkway?.length))
         :map-city="project?.city ?? ''"
         :map-selected="mapSelected"
         :underlay-src="underlaySrc"
+        :underlay-mime-type="underlayMimeType"
+        :underlay-page="underlayPage"
+        :pdf-pick-file="pdfPickerFile"
         :preview-unavailable="previewUnavailable"
         :uploading="uploading"
         @file-select="onFileSelect"
         @map-select="onMapSelect"
+        @pdf-page-confirm="onPdfPageConfirm"
+        @pdf-pick-cancel="onPdfPickerCancel"
       />
 
       <template v-else>

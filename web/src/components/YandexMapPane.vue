@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { getPublicConfig } from '@/api/client'
+import { geocodeAddress } from '@/utils/geocode'
 import type { MapSelectPayload } from '@/types'
 
 const props = defineProps<{
@@ -13,10 +15,11 @@ const emit = defineEmits<{
   select: [payload: MapSelectPayload]
 }>()
 
-const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? ''
+const apiKey = ref(import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? '')
 const mapEl = ref<HTMLDivElement | null>(null)
 const loadError = ref('')
 const geocoding = ref(false)
+const keyResolved = ref(!!apiKey.value)
 
 const CITY_COORDS: Record<string, [number, number]> = {
   'екатеринбург': [56.8389, 60.6057],
@@ -27,6 +30,13 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'новосибирск': [55.0084, 82.9357],
   'челябинск': [55.1644, 61.4368],
   'тюмень': [57.153, 65.5343],
+}
+
+function applyGeocodeResult(result: { address: string; lat: number; lon: number }) {
+  if (!map) return
+  map.setCenter([result.lat, result.lon], 17)
+  setPlacemark(result.lat, result.lon)
+  emit('select', result)
 }
 
 let map: InstanceType<NonNullable<typeof window.ymaps>['Map']> | null = null
@@ -46,25 +56,40 @@ function defaultCenter(): [number, number] {
 function loadYmapsScript(): Promise<void> {
   if (window.ymaps) return Promise.resolve()
   if (scriptPromise) return scriptPromise
-  if (!apiKey) {
-    return Promise.reject(new Error('VITE_YANDEX_MAPS_API_KEY не задан'))
-  }
-  scriptPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-ymaps="1"]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      existing.addEventListener('error', () => reject(new Error('ymaps load failed')))
-      return
+  scriptPromise = resolveApiKey().then((key) => {
+    if (!key) {
+      throw new Error('VITE_YANDEX_MAPS_API_KEY не задан')
     }
-    const script = document.createElement('script')
-    script.dataset.ymaps = '1'
-    script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(apiKey)}&lang=ru_RU`
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('ymaps load failed'))
-    document.head.appendChild(script)
+    return new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector('script[data-ymaps="1"]')
+      if (existing) {
+        existing.addEventListener('load', () => resolve())
+        existing.addEventListener('error', () => reject(new Error('ymaps load failed')))
+        return
+      }
+      const script = document.createElement('script')
+      script.dataset.ymaps = '1'
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${encodeURIComponent(key)}&lang=ru_RU`
+      script.async = true
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error('ymaps load failed'))
+      document.head.appendChild(script)
+    })
   })
   return scriptPromise
+}
+
+async function resolveApiKey(): Promise<string> {
+  if (apiKey.value) return apiKey.value
+  try {
+    const cfg = await getPublicConfig()
+    apiKey.value = cfg.yandexMapsApiKey?.trim() ?? ''
+  } catch {
+    apiKey.value = ''
+  } finally {
+    keyResolved.value = true
+  }
+  return apiKey.value
 }
 
 function setPlacemark(lat: number, lon: number) {
@@ -97,7 +122,15 @@ async function initMap() {
     if (props.lat != null && props.lon != null) {
       setPlacemark(props.lat, props.lon)
     }
+    map.events.add('click', (event: { get: (key: string) => number[] }) => {
+      const coords = event.get('coords')
+      const lat = coords[0]
+      const lon = coords[1]
+      setPlacemark(lat, lon)
+      emit('select', { address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, lat, lon })
+    })
   } catch (e) {
+    scriptPromise = null
     loadError.value = e instanceof Error ? e.message : 'Не удалось загрузить Яндекс.Карты'
   }
 }
@@ -109,16 +142,9 @@ async function geocode(query: string) {
   loadError.value = ''
   try {
     if (!map) await initMap()
-    if (!window.ymaps || !map) throw new Error('Карта не инициализирована')
-    const res = await window.ymaps.geocode(q, { results: 1 })
-    const first = res.geoObjects.get(0)
-    if (!first) throw new Error('Адрес не найден')
-    const coords = first.geometry.getCoordinates()
-    const lat = coords[0]
-    const lon = coords[1]
-    map.setCenter(coords, 17)
-    setPlacemark(lat, lon)
-    emit('select', { address: first.getAddressLine() || q, lat, lon })
+    if (!map) throw new Error('Карта не инициализирована')
+    const result = await geocodeAddress(q, props.city ?? '')
+    applyGeocodeResult({ ...result, address: q })
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Ошибка геокодирования'
   } finally {
@@ -153,7 +179,7 @@ defineExpose({ geocode })
     <div ref="mapEl" class="map-root" />
     <div v-if="loadError" class="map-error">
       <p>{{ loadError }}</p>
-      <p v-if="!apiKey" class="map-error-hint">Добавьте ключ в <code>VITE_YANDEX_MAPS_API_KEY</code> (файл <code>web/.env</code>).</p>
+      <p v-if="keyResolved && !apiKey" class="map-error-hint">Добавьте ключ в <code>VITE_YANDEX_MAPS_API_KEY</code> (файл <code>web/.env</code>) или <code>YANDEX_MAPS_API_KEY</code> (корневой <code>.env</code> для Docker).</p>
     </div>
     <div v-if="geocoding" class="map-loading">Поиск на карте…</div>
   </div>

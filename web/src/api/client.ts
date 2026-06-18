@@ -122,6 +122,16 @@ export function healthCheck() {
   return request<{ status: string }>('/health')
 }
 
+export function getPublicConfig() {
+  return request<{ yandexMapsApiKey?: string }>('/api/v1/config')
+}
+
+export function geocodeAddressApi(query: string, city?: string) {
+  const params = new URLSearchParams({ q: query })
+  if (city?.trim()) params.set('city', city.trim())
+  return request<{ address: string; label?: string; lat: number; lon: number }>(`/api/v1/geocode?${params}`)
+}
+
 export function projectUnderlayUrl(projectId: string) {
   const base = import.meta.env.VITE_API_URL ?? ''
   return `${base}/api/v1/projects/${projectId}/underlay`
