@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/technonicol/snowbag/api/internal/analytics"
 	"github.com/technonicol/snowbag/api/internal/model"
 )
 
@@ -59,7 +61,7 @@ func (s *Store) Ping(ctx context.Context) error {
 
 func (s *Store) ListProjects(ctx context.Context) ([]model.ProjectListItem, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT p.id, p.name, p.number, p.calc_no, p.customer, p.city, p.area_m2, p.status, p.created_at, p.calculation,
+		SELECT p.id, p.name, p.number, p.calc_no, p.customer, p.city, p.area_m2, p.status, p.created_at, p.calculation, p.geometry,
 		       COALESCE(h.cnt, 0) AS history_cnt
 		FROM projects p
 		LEFT JOIN (
@@ -77,12 +79,14 @@ func (s *Store) ListProjects(ctx context.Context) ([]model.ProjectListItem, erro
 		var id uuid.UUID
 		var created time.Time
 		var calc json.RawMessage
+		var geom json.RawMessage
 		var historyCnt int
-		if err := rows.Scan(&id, &p.Name, &p.Number, &p.CalcNo, &p.Customer, &p.City, &p.AreaM2, &p.Status, &created, &calc, &historyCnt); err != nil {
+		if err := rows.Scan(&id, &p.Name, &p.Number, &p.CalcNo, &p.Customer, &p.City, &p.AreaM2, &p.Status, &created, &calc, &geom, &historyCnt); err != nil {
 			return nil, err
 		}
 		p.ID = id
 		p.Created = formatDate(created)
+		p.AreaM2 = resolveProjectAreaM2(calc, geom, p.AreaM2)
 		p.Sensors = sensorsFromCalc(calc)
 		p.Status = statusLabel(p.Status)
 		p.Calcs = historyCnt
@@ -177,6 +181,12 @@ func (s *Store) UpdateProject(ctx context.Context, id uuid.UUID, req model.Updat
 	}
 	if len(req.Geometry) > 0 {
 		geometry = req.Geometry
+		if req.AreaM2 == nil {
+			g := ParseGeometry(req.Geometry, nil, 0)
+			if computed := analytics.RoofAreaFromCanvasPolygon(g.Roof); computed > 0 {
+				areaM2 = math.Round(computed)
+			}
+		}
 	}
 	if len(req.Climate) > 0 {
 		climate = req.Climate
@@ -530,6 +540,44 @@ func sensorsFromCalc(raw json.RawMessage) int {
 	return m.Metrics.Sensors
 }
 
+func roofAreaFromCalc(raw json.RawMessage) float64 {
+	if len(raw) == 0 || string(raw) == "{}" || string(raw) == "null" {
+		return 0
+	}
+	var m struct {
+		Metrics struct {
+			RoofArea string `json:"roofArea"`
+		} `json:"metrics"`
+	}
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return 0
+	}
+	return parseAreaString(m.Metrics.RoofArea)
+}
+
+func parseAreaString(s string) float64 {
+	s = strings.TrimSpace(strings.ReplaceAll(s, " ", ""))
+	if s == "" {
+		return 0
+	}
+	var f float64
+	if _, err := fmt.Sscanf(strings.ReplaceAll(s, ",", "."), "%f", &f); err != nil {
+		return 0
+	}
+	return f
+}
+
+func resolveProjectAreaM2(calc, geom json.RawMessage, stored float64) float64 {
+	if a := roofAreaFromCalc(calc); a > 0 {
+		return a
+	}
+	g := ParseGeometry(geom, nil, 0)
+	if a := analytics.RoofAreaFromCanvasPolygon(g.Roof); a > 0 {
+		return math.Round(a)
+	}
+	return stored
+}
+
 func statusLabel(s string) string {
 	switch s {
 	case "done":
@@ -598,7 +646,17 @@ func ParseGeometry(raw json.RawMessage, fallback json.RawMessage, areaM2 float64
 	if g.AreaM2 == 0 && areaM2 > 0 {
 		g.AreaM2 = areaM2
 	}
+	EnsureGeometryArea(&g)
 	return g
+}
+
+func EnsureGeometryArea(g *model.GeometryData) {
+	if g == nil || g.AreaM2 > 0 {
+		return
+	}
+	if a := analytics.RoofAreaFromCanvasPolygon(g.Roof); a > 0 {
+		g.AreaM2 = math.Round(a)
+	}
 }
 
 func GeometryJSON(g model.GeometryData) json.RawMessage {
@@ -610,7 +668,7 @@ func RoofAreaFromGeometry(g model.GeometryData) float64 {
 	if g.AreaM2 > 0 {
 		return g.AreaM2
 	}
-	return 0
+	return analytics.RoofAreaFromCanvasPolygon(g.Roof)
 }
 
 func ClimateFromCity(city string) (snow, wind string) {

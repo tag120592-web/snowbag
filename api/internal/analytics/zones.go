@@ -197,7 +197,7 @@ func classifyRisk(mu float64, concave bool) (riskClass, uiRisk string) {
 }
 
 func snowLoadStr(ce, ct, mu, sg float64) string {
-	s := ce * ct * mu * sg
+	s := sp20BaseLoad(sg, ce, ct, mu)
 	return formatLoad(s)
 }
 

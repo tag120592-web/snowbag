@@ -101,22 +101,24 @@ type UpdateProjectRequest struct {
 }
 
 type CalculateRequest struct {
-	NorthDeg   float64         `json:"northDeg"`
-	SnowRegion string          `json:"snowRegion"`
-	WindRegion string          `json:"windRegion"`
-	ParapetMm  float64         `json:"parapetMm,omitempty"`
-	Ce         float64         `json:"ce,omitempty"`
-	Ct         float64         `json:"ct,omitempty"`
-	Geometry   json.RawMessage `json:"geometry"`
-	Climate    json.RawMessage `json:"climate"`
-	Sensors    []Sensor        `json:"sensors,omitempty"`
+	NorthDeg          float64         `json:"northDeg"`
+	SnowRegion        string          `json:"snowRegion"`
+	WindRegion        string          `json:"windRegion"`
+	ParapetMm         float64         `json:"parapetMm,omitempty"`
+	WindDirectionDeg  *float64        `json:"windDirectionDeg,omitempty"`
+	Ce                float64         `json:"ce,omitempty"`
+	Ct                float64         `json:"ct,omitempty"`
+	Geometry          json.RawMessage `json:"geometry"`
+	Climate           json.RawMessage `json:"climate"`
+	Sensors           []Sensor        `json:"sensors,omitempty"`
 }
 
 type GeometryData struct {
-	Roof      [][]float64 `json:"roof"`
-	Obstacles []Obstacle  `json:"obstacles,omitempty"`
-	Walkway   [][]float64 `json:"walkway,omitempty"`
-	AreaM2    float64     `json:"areaM2,omitempty"`
+	Roof         [][]float64 `json:"roof"`
+	Obstacles    []Obstacle  `json:"obstacles,omitempty"`
+	Walkway      [][]float64 `json:"walkway,omitempty"`
+	SideParapets []float64   `json:"sideParapets,omitempty"`
+	AreaM2       float64     `json:"areaM2,omitempty"`
 }
 
 type Obstacle struct {
@@ -135,16 +137,17 @@ type Obstacle struct {
 }
 
 type CalculateInput struct {
-	City       string
-	SnowRegion string
-	WindRegion string
-	NorthDeg   float64
-	ParapetMm  float64
-	Ce         float64
-	Ct         float64
-	Geometry   GeometryData
-	WindRose   []WindRose
-	Sensors    []Sensor
+	City             string
+	SnowRegion       string
+	WindRegion       string
+	NorthDeg         float64
+	ParapetMm        float64
+	WindDirectionDeg *float64
+	Ce               float64
+	Ct               float64
+	Geometry         GeometryData
+	WindRose         []WindRose
+	Sensors          []Sensor
 }
 
 type CalculationResult struct {
@@ -153,6 +156,33 @@ type CalculationResult struct {
 	Metrics  Metrics    `json:"metrics"`
 	Spec     []SpecItem `json:"spec"`
 	WindRose []WindRose `json:"windRose"`
+	LoadGrid *LoadGrid  `json:"loadGrid,omitempty"`
+}
+
+type GridCell struct {
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	ValueKpa float64 `json:"value_kpa"`
+}
+
+type GridBounds struct {
+	MinX float64 `json:"min_x"`
+	MaxX float64 `json:"max_x"`
+	MinY float64 `json:"min_y"`
+	MaxY float64 `json:"max_y"`
+}
+
+type LoadGrid struct {
+	Grid                  []GridCell `json:"grid"`
+	Width                 int        `json:"width"`
+	Height                int        `json:"height"`
+	CellSizeM             float64    `json:"cell_size_m"`
+	MinValueKpa           float64    `json:"min_value_kpa"`
+	MaxValueKpa           float64    `json:"max_value_kpa"`
+	Bounds                GridBounds `json:"bounds"`
+	WindDirectionDeg      float64    `json:"wind_direction_deg"`
+	LocalWindDirectionDeg float64    `json:"local_wind_direction_deg"`
+	NorthDirectionDeg     float64    `json:"north_direction_deg"`
 }
 
 type Snowbag struct {
@@ -189,6 +219,7 @@ type Metrics struct {
 
 type SpecItem struct {
 	Pos  int    `json:"pos"`
+	EKN  string `json:"ekn,omitempty"`
 	Name string `json:"name"`
 	Unit string `json:"unit"`
 	Qty  int    `json:"qty"`

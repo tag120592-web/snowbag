@@ -21,6 +21,8 @@ import {
   type ClimateLookupResult,
 } from '@/api/client'
 import WindRose from '@/components/WindRose.vue'
+import LoadHeatmap from '@/components/LoadHeatmap.vue'
+import BagCard from '@/components/BagCard.vue'
 import YandexMapPane from '@/components/YandexMapPane.vue'
 import {
   DEMO_GEOMETRY,
@@ -42,8 +44,10 @@ import {
   closedPolylineLengthPx,
   formatLengthM,
   formatParapetMm,
+  formatRoofAreaM2,
   parseParapetMm,
   PX_PER_M,
+  roofAreaM2FromPoints,
   roofSideCount,
   sideLabel,
   polylineEdgeCount,
@@ -114,6 +118,7 @@ const saving = ref(false)
 const uploading = ref(false)
 const error = ref('')
 const view3d = ref(false)
+const canvasDisplayMode = ref<'zones' | 'heatmap' | 'both'>('both')
 const underlayUrl = ref('')
 const hasUnderlay = ref(false)
 const showUnderlay = ref(true)
@@ -230,14 +235,27 @@ async function loadProject() {
   }
 }
 
+function roofAreaForGeometry(geom: GeometryData, fallback?: number): number | undefined {
+  if (geom.roof?.length) {
+    const computed = roofAreaM2FromPoints(geom.roof)
+    if (computed > 0) return Math.round(computed)
+  }
+  if (geom.areaM2 && geom.areaM2 > 0) return geom.areaM2
+  if (fallback && fallback > 0) return fallback
+  return undefined
+}
+
 function applyProjectMeta() {
   if (!project.value) return
   if (project.value.geometry?.roof?.length) {
-    geometry.value = {
+    const base = {
       ...project.value.geometry,
       obstacles: [...(project.value.geometry.obstacles ?? [])],
-      areaM2: project.value.geometry.areaM2 || project.value.areaM2 || DEMO_GEOMETRY.areaM2,
       walkway: undefined,
+    }
+    geometry.value = {
+      ...base,
+      areaM2: roofAreaForGeometry(base, project.value.areaM2 || DEMO_GEOMETRY.areaM2),
     }
     roofName.value = project.value.geometry.roofName ?? 'Контур кровли'
     if (geometry.value.roof?.length) {
@@ -300,10 +318,13 @@ function applyProjectMeta() {
 
 function applyRunSnapshot(run: CalculationRunSnapshot) {
   if (run.geometry?.roof?.length) {
-    geometry.value = {
+    const base = {
       ...run.geometry,
       obstacles: [...(run.geometry.obstacles ?? [])],
-      areaM2: run.geometry.areaM2 || project.value?.areaM2 || DEMO_GEOMETRY.areaM2,
+    }
+    geometry.value = {
+      ...base,
+      areaM2: roofAreaForGeometry(base, project.value?.areaM2 || DEMO_GEOMETRY.areaM2),
     }
   }
   snowRegion.value = run.snowRegion || 'III'
@@ -413,7 +434,7 @@ async function saveDraft() {
       northDeg: northDeg.value,
       snowRegion: snowRegion.value,
       windRegion: windRegion.value,
-      areaM2: geometry.value.areaM2 ?? project.value?.areaM2,
+      areaM2: roofAreaForGeometry(geometry.value, project.value?.areaM2),
       address: mapAddress.value || project.value?.address,
       lat: mapLat.value ?? undefined,
       lon: mapLon.value ?? undefined,
@@ -450,6 +471,14 @@ function back() {
   if (step.value > 0) goStep(step.value - 1)
 }
 
+function prevailingWindDeg(): number | undefined {
+  const p = climatePreview.value?.prevailingWind
+  if (p?.deg != null) return p.deg
+  const rose = climatePreview.value?.windRose ?? calculation.value?.windRose
+  if (!rose?.length) return undefined
+  return rose.reduce((a, b) => (b.v > a.v ? b : a)).deg
+}
+
 async function runCalculate(): Promise<boolean> {
   if (!projectId.value) return false
   calculating.value = true
@@ -459,6 +488,7 @@ async function runCalculate(): Promise<boolean> {
   }, 120)
   try {
     const sensors = calculation.value?.sensors?.map((s) => ({ ...s, zone: s.zone ?? null }))
+    const windDeg = prevailingWindDeg()
     const res = await calculateProject(projectId.value, {
       northDeg: northDeg.value,
       snowRegion: snowRegion.value,
@@ -466,6 +496,7 @@ async function runCalculate(): Promise<boolean> {
       parapetMm: parapetMm.value,
       geometry: geometry.value,
       sensors: sensors?.length ? sensors : undefined,
+      ...(windDeg != null ? { windDirectionDeg: windDeg } : {}),
     })
     calculation.value = res.calculation
     project.value = res.project
@@ -686,10 +717,13 @@ function onDrawFinish() {
 }
 
 function onRoofChange(points: number[][]) {
+  const roof = points.map((p) => [...p])
+  const areaM2 = roofAreaM2FromPoints(roof)
   geometry.value = {
     ...geometry.value,
-    roof: points.map((p) => [...p]),
+    roof,
     sideParapets: syncSideParapets(points),
+    areaM2: areaM2 > 0 ? Math.round(areaM2) : undefined,
   }
   editTarget.value = 'roof'
   roofExpanded.value = true
@@ -914,6 +948,7 @@ async function recalcWithSensors() {
 
 async function runCalculateWithSensors(sensors: Sensor[]) {
   if (!projectId.value) return
+  const windDeg = prevailingWindDeg()
   const res = await calculateProject(projectId.value, {
     northDeg: northDeg.value,
     snowRegion: snowRegion.value,
@@ -921,6 +956,7 @@ async function runCalculateWithSensors(sensors: Sensor[]) {
     parapetMm: parapetMm.value,
     geometry: geometry.value,
     sensors,
+    ...(windDeg != null ? { windDirectionDeg: windDeg } : {}),
   })
   calculation.value = res.calculation
   project.value = res.project
@@ -952,8 +988,13 @@ function onFooterNext() {
 }
 
 const roofAreaLabel = computed(() => {
-  const a = project.value?.areaM2 || geometry.value.areaM2
-  return a ? Math.round(a).toLocaleString('ru-RU') : '—'
+  const fromGeom = roofAreaForGeometry(geometry.value)
+  const fromProject = project.value?.areaM2
+  const fromCalc = project.value?.calculation?.metrics?.roofArea
+  if (fromGeom && fromGeom > 0) return Math.round(fromGeom).toLocaleString('ru-RU')
+  if (fromProject && fromProject > 0) return Math.round(fromProject).toLocaleString('ru-RU')
+  if (fromCalc) return fromCalc
+  return '—'
 })
 
 const canvasLayers = computed(() => {
@@ -969,7 +1010,7 @@ const canvasLayers = computed(() => {
     obstacles: id !== 'upload',
     walkway: false,
     parapet: id === 'roof' || id === 'bags' || id === 'result',
-    bags: id === 'bags' || id === 'result',
+    bags: (id === 'bags' || id === 'result') && canvasDisplayMode.value !== 'heatmap',
     sensors: id === 'bags' || id === 'result',
     wind: id === 'climate' || id === 'bags' || id === 'result',
   }
@@ -977,6 +1018,14 @@ const canvasLayers = computed(() => {
 
 function selectBag(id: string) {
   selectedBagId.value = selectedBagId.value === id ? null : id
+}
+
+function focusBag(id: string) {
+  selectedBagId.value = id
+}
+
+function formatMu(mu: number): string {
+  return mu.toLocaleString('ru-RU', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 }
 
 function onBagChange(id: string, poly: number[][]) {
@@ -1231,7 +1280,7 @@ const roofElements = computed(() =>
             :preview-wind-rose="climateWindRose"
             @sensor-move="onSensorMove"
             @sensor-select="selectSensor"
-            @bag-select="selectBag"
+            @bag-select="focusBag"
             @bag-change="onBagChange"
             @obstacle-select="onObstacleSelect"
             @roof-change="onRoofChange"
@@ -1241,10 +1290,22 @@ const roofElements = computed(() =>
             @draw-cancel="cancelDraw"
             @edit-clear="clearEditSelection"
           />
+          <LoadHeatmap
+            v-if="!view3d && canvasDisplayMode !== 'zones' && calculation?.loadGrid && geometry.roof?.length"
+            class="heatmap-overlay"
+            :load-grid="calculation.loadGrid"
+            :roof="geometry.roof"
+            :area-m2="geometry.areaM2 ?? project?.areaM2"
+          />
         </div>
         <div v-if="['bags', 'result'].includes(steps[step].id)" class="canvas-tools">
           <button type="button" class="tool" :class="{ active: !view3d }" @click="view3d = false">2D</button>
           <button type="button" class="tool" :class="{ active: view3d }" @click="view3d = true">3D</button>
+          <template v-if="!view3d">
+            <button type="button" class="tool" :class="{ active: canvasDisplayMode === 'zones' }" @click="canvasDisplayMode = 'zones'">Зоны</button>
+            <button type="button" class="tool" :class="{ active: canvasDisplayMode === 'heatmap' }" @click="canvasDisplayMode = 'heatmap'">Нагрузка</button>
+            <button type="button" class="tool" :class="{ active: canvasDisplayMode === 'both' }" @click="canvasDisplayMode = 'both'">Оба</button>
+          </template>
         </div>
         <div v-if="view3d && ['bags', 'result'].includes(steps[step].id)" class="heatmap-hint">
           Тепловая карта толщины снега · сугробы ограничены высотой парапета
@@ -1433,7 +1494,10 @@ const roofElements = computed(() =>
         </template>
 
         <template v-else-if="steps[step].id === 'bags'">
-          <h3>Снеговые мешки и датчики</h3>
+          <div class="bags-panel-head">
+            <h3>Зоны снегонакопления</h3>
+            <span class="sp-tag">СП 20.13330</span>
+          </div>
           <div v-if="calculation?.metrics" class="metrics">
             <div><span>Мешки</span><strong>{{ calculation.metrics.bagsArea }} м²</strong></div>
             <div><span>Датчики</span><strong>{{ calculation.metrics.sensors }} шт.</strong></div>
@@ -1444,29 +1508,26 @@ const roofElements = computed(() =>
             <span v-if="calculation.metrics.risk.high" class="chip high">{{ calculation.metrics.risk.high }} высоких</span>
             <span v-if="calculation.metrics.risk.medium" class="chip medium">{{ calculation.metrics.risk.medium }} средних</span>
           </div>
-          <p class="hint">Перетащите датчики на схеме. Размер мешка меняйте за угловые маркеры на плане.</p>
+          <p class="hint">Перетащите мешки и датчики на схеме. Ручные мешки — корректировка поверх авторасчёта.</p>
           <div v-if="!archiveView" class="panel-actions bag-actions">
             <button type="button" class="btn block" @click="addSensor">+ Добавить датчик</button>
             <button type="button" class="btn block" :disabled="!selectedSensorId" @click="deleteSelectedSensor">Удалить датчик</button>
-            <button type="button" class="btn block" @click="addSnowBag">+ Добавить снеговой мешок</button>
+            <button type="button" class="btn block" @click="addSnowBag">+ Добавить мешок (вручную)</button>
           </div>
           <div v-if="selectedBagId && !archiveView" class="bag-editor">
             <button type="button" class="btn danger block" @click="deleteSelectedBag">Удалить мешок «{{ selectedBagId }}»</button>
           </div>
           <button type="button" class="btn" :disabled="archiveView" @click="recalcWithSensors">Пересчитать с учётом датчиков</button>
-          <ul class="list bag-list">
-            <li
-              v-for="bag in calculation?.snowbags"
+          <div v-if="calculation?.snowbags?.length" class="bag-cards">
+            <BagCard
+              v-for="bag in calculation.snowbags"
               :key="bag.id"
-              :class="{ active: selectedBagId === bag.id }"
+              :bag="bag"
+              :selected="selectedBagId === bag.id"
               @click="selectBag(bag.id)"
-            >
-              <strong>{{ bag.id }}</strong> — {{ bag.name }}
-              <span v-if="bag.scheme" class="bag-scheme">{{ bag.scheme }}</span>
-              <span v-if="bag.riskClass" class="bag-risk" :class="bag.risk">{{ bag.riskClass }}</span>
-              <div class="bag-meta">{{ bag.area }} м² · μ={{ bag.mu }} · S={{ bag.load }} кПа</div>
-            </li>
-          </ul>
+            />
+          </div>
+          <p v-else class="hint">Нажмите «Рассчитать мешки» на шаге климата.</p>
         </template>
 
         <template v-else>
@@ -1478,10 +1539,13 @@ const roofElements = computed(() =>
             <div v-if="calculation.metrics.avgDistM"><span>Ср. расстояние</span><strong>{{ calculation.metrics.avgDistM }} м</strong></div>
           </div>
           <table v-if="calculation?.spec?.length" class="spec">
-            <thead><tr><th>№</th><th>Наименование</th><th>Кол.</th></tr></thead>
+            <thead><tr><th>№</th><th>ЕКН</th><th>Наименование</th><th>Кол.</th></tr></thead>
             <tbody>
               <tr v-for="row in calculation.spec" :key="row.pos">
-                <td>{{ row.pos }}</td><td>{{ row.name }}</td><td>{{ row.qty }} {{ row.unit }}</td>
+                <td>{{ row.pos }}</td>
+                <td class="mono">{{ row.ekn || '—' }}</td>
+                <td>{{ row.name }}</td>
+                <td>{{ row.qty }} {{ row.unit }}</td>
               </tr>
             </tbody>
           </table>
@@ -1601,6 +1665,11 @@ const roofElements = computed(() =>
 }
 .ortho-btn.active { background: #fff; color: var(--red-60); }
 .canvas-stack { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.heatmap-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.bags-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.bags-panel-head h3 { margin: 0; }
+.sp-tag { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--green-10); color: var(--green-60); }
+.bag-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; max-height: 42vh; overflow-y: auto; }
 .map-underlay { flex: 1; min-height: 0; margin: 0 !important; border-radius: var(--radius-lg); }
 .map-underlay :deep(.map-wrap) { margin: 0; min-height: 100%; height: 100%; }
 .roof-overlay { flex: 1; min-height: 0; }
@@ -1727,6 +1796,7 @@ input, select { width: 100%; margin-top: 6px; height: 40px; padding: 0 12px; bor
 .height-range { width: 100%; margin-top: 10px; height: auto; padding: 0; border: none; }
 .spec { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
 .spec th, .spec td { border-bottom: 1px solid var(--neutral-15); padding: 6px 4px; text-align: left; }
+.spec td.mono { font-family: var(--font-family-mono, monospace); font-size: 11px; color: var(--content-secondary-enabled); }
 .footer {
   height: 72px; display: flex; align-items: center; gap: 14px; padding: 0 28px;
   background: #fff; border-top: 1px solid var(--border-secondary-enabled);

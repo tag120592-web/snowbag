@@ -8,6 +8,7 @@ import {
   closedPolylineLengthPx,
   formatLengthM,
   roofEdgeSegments,
+  moveBagPoly,
   moveCircle,
   moveRect,
   moveVertex,
@@ -73,7 +74,11 @@ const riskColors: Record<string, { fill: string; soft: string; line: string }> =
 
 const svgRef = ref<SVGSVGElement | null>(null)
 const sensorDragging = ref<string | null>(null)
-const bagDrag = ref<{ id: string; corner: number } | null>(null)
+const bagDrag = ref<
+  | { kind: 'corner'; id: string; corner: number }
+  | { kind: 'move'; id: string; start: [number, number]; origPoly: number[][] }
+  | null
+>(null)
 
 type PolyDraw = { points: number[][] }
 type RectDraw = { start: [number, number]; current: [number, number] }
@@ -166,8 +171,15 @@ function onCanvasMove(e: MouseEvent) {
     const bag = props.calculation?.snowbags?.find((b) => b.id === bagDrag.value!.id)
     if (bag?.poly?.length) {
       const p = svgPointFromEvent(svg, e)
-      const poly = resizeBagPoly(bag.poly, bagDrag.value.corner, p)
-      emit('bagChange', bagDrag.value.id, poly)
+      if (bagDrag.value.kind === 'move') {
+        const dx = p[0] - bagDrag.value.start[0]
+        const dy = p[1] - bagDrag.value.start[1]
+        const poly = moveBagPoly(bagDrag.value.origPoly, dx, dy)
+        emit('bagChange', bagDrag.value.id, poly)
+      } else {
+        const poly = resizeBagPoly(bag.poly, bagDrag.value.corner, p)
+        emit('bagChange', bagDrag.value.id, poly)
+      }
     }
     return
   }
@@ -442,7 +454,26 @@ function startBagCornerDrag(id: string, corner: number, e: MouseEvent) {
   if (!props.editableBags) return
   e.stopPropagation()
   e.preventDefault()
-  bagDrag.value = { id, corner }
+  bagDrag.value = { kind: 'corner', id, corner }
+}
+
+function startBagMove(bag: { id: string; poly?: number[][] }, e: MouseEvent) {
+  if (!props.editableBags) return
+  e.stopPropagation()
+  e.preventDefault()
+  if (props.selectedBagId !== bag.id) {
+    emit('bagSelect', bag.id)
+    return
+  }
+  const svg = getSvg()
+  if (!svg || !bag.poly?.length) return
+  const pt = svgPointFromEvent(svg, e)
+  bagDrag.value = {
+    kind: 'move',
+    id: bag.id,
+    start: pt,
+    origPoly: bag.poly.map((p) => [...p] as [number, number]),
+  }
 }
 
 function bagCornerPoints(poly: number[][]): number[][] {
@@ -869,7 +900,6 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :key="bag.id"
           class="bag-zone map-interactive"
           :class="{ selected: selectedBagId === bag.id, selectable: editableBags }"
-          @mousedown.stop="editableBags && emit('bagSelect', bag.id)"
         >
           <polygon
             :points="ptsStr(bag.poly)"
@@ -878,6 +908,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             :stroke-width="selectedBagId === bag.id ? 2.5 : 1.1"
             stroke-dasharray="5 4"
             :stroke-opacity="selectedBagId === bag.id ? 0.95 : 0.45"
+            @mousedown.stop="startBagMove(bag, $event)"
           />
           <text
             :x="polyCentroid(bag.poly)[0]"
@@ -931,6 +962,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 <style scoped>
 .wrap { width: 100%; height: 100%; display: flex; }
 .wrap.pointer-passthrough { pointer-events: none; }
+/* Parent pointer-events:none does not block SVG children (default auto) — disable the canvas explicitly. */
+.wrap.pointer-passthrough .canvas { pointer-events: none; }
 .wrap.pointer-passthrough.map-edit-mode :deep(.map-interactive) { pointer-events: auto; }
 .wrap.crosshair { cursor: crosshair; }
 .canvas { width: 100%; height: 100%; display: block; }
