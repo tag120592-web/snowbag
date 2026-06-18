@@ -90,16 +90,24 @@ const steps = computed(() => buildSteps(modules.value))
 const therm = useThermalCalc()
 const isThermalStep = computed(() => ['thermo-params', 'thermo-hetero'].includes(steps.value[step.value]?.id ?? ''))
 const isThermalResult = computed(() => steps.value[step.value]?.id === 'result' && modules.value.thermal && !modules.value.snow)
+// Единый результат (оба расчёта): вкладки «Снег / Теплотехника».
+const resultTab = ref<'snow' | 'thermal'>('thermal')
+const bothResult = computed(() => steps.value[step.value]?.id === 'result' && modules.value.snow && modules.value.thermal)
+const showThermalResultPanel = computed(() => isThermalResult.value || (bothResult.value && resultTab.value === 'thermal'))
 let thermalReady = false
 async function initThermal() {
   if (!modules.value.thermal || !projectId.value || thermalReady) return
   thermalReady = true
   therm.reset(projectId.value)
   await therm.loadGeometry()
+  therm.setGeometry(geometry.value) // живая геометрия из мастера — приоритет
   await therm.runCalc()
 }
 watch(step, () => {
-  if (isThermalStep.value || isThermalResult.value) void initThermal()
+  if (isThermalStep.value || isThermalResult.value) {
+    therm.setGeometry(geometry.value) // подхватить свежие элементы, нарисованные на шаге «Геометрия»
+    void initThermal()
+  }
 })
 const calcProgress = ref(0)
 const saving = ref(false)
@@ -1108,6 +1116,12 @@ const roofElements = computed(() =>
       </button>
     </nav>
 
+    <div v-if="bothResult" class="result-tabs">
+      <span class="rt-label">Результаты:</span>
+      <button type="button" :class="{ active: resultTab === 'snow' }" @click="resultTab = 'snow'">❄️ Снеговые мешки</button>
+      <button type="button" :class="{ active: resultTab === 'thermal' }" @click="resultTab = 'thermal'">🌡️ Теплотехника</button>
+    </div>
+
     <p v-if="error" class="error">{{ error }}</p>
 
     <div v-if="archiveView" class="archive-banner">
@@ -1153,7 +1167,7 @@ const roofElements = computed(() =>
 
       <ThermoParamsStep v-else-if="steps[step].id === 'thermo-params'" />
       <ThermoHeteroStep v-else-if="steps[step].id === 'thermo-hetero'" />
-      <ThermoResultStep v-else-if="isThermalResult" />
+      <ThermoResultStep v-else-if="showThermalResultPanel" />
 
       <template v-else>
       <div class="canvas-pane">
@@ -1538,6 +1552,10 @@ const roofElements = computed(() =>
 .step.active .num { background: var(--red-60); color: #fff; }
 .step.done .num { background: var(--neutral-100); color: #fff; }
 .step.active .label { font-weight: 700; color: var(--red-60); }
+.result-tabs { display: flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--background-primary-a-enabled); border-bottom: 1px solid var(--border-secondary-enabled); }
+.result-tabs .rt-label { font-size: 13px; font-weight: 600; color: var(--content-tertiary-enabled); margin-right: 4px; }
+.result-tabs button { padding: 7px 14px; border: 1px solid var(--border-secondary-enabled); border-radius: 999px; background: var(--background-primary-a-enabled); cursor: pointer; font-size: 13px; color: var(--content-secondary-enabled); }
+.result-tabs button.active { border-color: var(--red-60); color: var(--content-accent-enabled); background: var(--red-10); font-weight: 600; }
 .work { flex: 1; display: flex; min-height: 0; }
 .canvas-pane { flex: 1; min-width: 0; background: var(--neutral-10); display: flex; flex-direction: column; padding: 16px; position: relative; }
 .canvas-tools { position: absolute; top: 24px; right: 24px; display: flex; gap: 6px; }

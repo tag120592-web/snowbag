@@ -69,6 +69,11 @@ async function loadGeometry() {
   }
 }
 
+// Задать геометрию напрямую (живая модель из мастера — приоритетнее загрузки с сервера).
+function setGeometry(g: GeometryData | null) {
+  if (g && (g.roof?.length ?? 0) >= 3) geometry.value = g
+}
+
 function addHetero(node: string, kind: 'linear' | 'point') {
   heteroSeq += 1
   hetero.value.push({
@@ -89,14 +94,17 @@ function obstacleToNode(o: Obstacle): { node: string; kind: 'linear' | 'point' }
   if (t.includes('блок') || t.includes('установк') || t.includes('вент')) return { node: 'junction', kind: 'linear' }
   return null
 }
+// Узел по умолчанию для нераспознанного элемента: круг → точечная, иначе → линейная.
+function defaultNode(o: Obstacle): { node: string; kind: 'linear' | 'point' } {
+  return o.shape === 'circle' ? { node: 'prohodka', kind: 'point' } : { node: 'junction', kind: 'linear' }
+}
 function toggleObstacle(o: Obstacle) {
   const exists = hetero.value.find((h) => h.elementId === o.id)
   if (exists) {
     hetero.value = hetero.value.filter((h) => h.elementId !== o.id)
     return
   }
-  const map = obstacleToNode(o)
-  if (!map) return
+  const map = obstacleToNode(o) ?? defaultNode(o)
   heteroSeq += 1
   hetero.value.push({
     id: `h${heteroSeq}`, elementId: o.id, kind: map.kind, sp230Node: map.node, status: 'confirmed',
@@ -131,6 +139,6 @@ export function useThermalCalc() {
     // computed
     humidityRegime, planGeometry, usingDemoPlan, activeObstacleIds, displayLayers, rPct,
     // действия
-    reset, loadGeometry, addHetero, removeHetero, toggleObstacle, runCalc, nodeLabel,
+    reset, loadGeometry, setGeometry, addHetero, removeHetero, toggleObstacle, runCalc, nodeLabel,
   }
 }

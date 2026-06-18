@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { listProjects } from '@/api/client'
 import type { ProjectListItem } from '@/types'
 import { MODULES } from '@/api/thermal'
@@ -10,6 +10,7 @@ import ThermoHeteroStep from '@/components/thermal/ThermoHeteroStep.vue'
 import ThermoResultStep from '@/components/thermal/ThermoResultStep.vue'
 
 const router = useRouter()
+const route = useRoute()
 const t = useThermalCalc()
 const projects = ref<ProjectListItem[]>([])
 const pickedId = ref('')
@@ -28,7 +29,9 @@ const wizardSteps = [
 onMounted(async () => {
   try {
     projects.value = await listProjects()
-    if (projects.value.length) pickedId.value = projects.value[0].id
+    const fromQuery = route.query.project ? String(route.query.project) : ''
+    if (fromQuery && projects.value.some((p) => p.id === fromQuery)) pickedId.value = fromQuery
+    else if (projects.value.length) pickedId.value = projects.value[0].id
   } catch (e) {
     localError.value = e instanceof Error ? e.message : 'Ошибка загрузки проектов'
   } finally {
@@ -49,7 +52,8 @@ function goToData() {
     return
   }
   const calc = [modules.value.snow ? 'snow' : '', modules.value.thermal ? 'thermal' : ''].filter(Boolean).join(',')
-  router.push(`/wizard/${pickedId.value}?calc=${calc}`)
+  const newFlag = route.query.new === '1' ? '&new=1' : ''
+  router.push(`/wizard/${pickedId.value}?calc=${calc}${newFlag}`)
 }
 async function next() {
   if (step.value === 0) {
