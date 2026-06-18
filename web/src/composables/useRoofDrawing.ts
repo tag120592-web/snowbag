@@ -69,6 +69,13 @@ export function sideLabel(index: number): string {
   return `Сторона ${index + 1}`
 }
 
+/** Closed polygon: one side per vertex; open polyline: one side per segment. */
+export function elementSideCount(points: number[][], closed = true): number {
+  if (points.length < 2) return 0
+  if (closed) return points.length >= 3 ? points.length : 0
+  return points.length - 1
+}
+
 /** Constrain pointer to horizontal or vertical axis from anchor. */
 export function orthogonalPoint(
   anchor: [number, number],

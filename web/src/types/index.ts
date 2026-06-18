@@ -2,6 +2,8 @@ export interface MapSelectPayload {
   address: string
   lat: number
   lon: number
+  zoom?: number
+  center?: [number, number]
 }
 
 export interface CreateProjectPayload {
@@ -94,6 +96,8 @@ export interface Obstacle {
   r?: number
   points?: number[][]
   hM?: number
+  /** Per-segment heights for polyline elements (one value per side). */
+  sideHeights?: number[]
 }
 
 export interface Snowbag {

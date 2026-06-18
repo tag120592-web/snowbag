@@ -9,6 +9,8 @@ const props = defineProps<{
   lat?: number | null
   lon?: number | null
   city?: string
+  /** Initial zoom level (restored between wizard steps). */
+  zoom?: number | null
   /** When false, map is view-only (for geometry tracing overlay). */
   interactive?: boolean
 }>()
@@ -17,6 +19,7 @@ const interactive = computed(() => props.interactive !== false)
 
 const emit = defineEmits<{
   select: [payload: MapSelectPayload]
+  viewportChange: [payload: { zoom: number; center: [number, number] }]
 }>()
 
 const apiKey = ref(import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? '')
@@ -37,16 +40,25 @@ const CITY_COORDS: Record<string, [number, number]> = {
   'волгоград': [48.7082, 44.5153],
 }
 
-function applyGeocodeResult(result: { address: string; lat: number; lon: number }) {
+function applyGeocodeResult(result: { address: string; lat: number; lon: number; label?: string }) {
   if (!map) return
-  map.setCenter([result.lat, result.lon], 17)
+  const zoom = props.zoom ?? 17
+  map.setCenter([result.lat, result.lon], zoom)
   setPlacemark(result.lat, result.lon)
-  emit('select', result)
+  emitViewport()
+  emit('select', {
+    address: result.label?.trim() || result.address,
+    lat: result.lat,
+    lon: result.lon,
+    zoom: map.getZoom(),
+    center: mapCenter(),
+  })
 }
 
 let map: InstanceType<NonNullable<typeof window.ymaps>['Map']> | null = null
 let placemark: unknown = null
 let scriptPromise: Promise<void> | null = null
+let viewportListener: (() => void) | null = null
 
 function normalizeCity(city: string) {
   return city.trim().toLowerCase().replace(/^г\.?\s*/, '')
@@ -56,6 +68,22 @@ function defaultCenter(): [number, number] {
   if (props.lat != null && props.lon != null) return [props.lat, props.lon]
   const cityKey = normalizeCity(props.city ?? '')
   return CITY_COORDS[cityKey] ?? [56.8389, 60.6057]
+}
+
+function defaultZoom(): number {
+  if (props.zoom != null) return props.zoom
+  return props.lat != null ? 17 : 11
+}
+
+function mapCenter(): [number, number] {
+  if (!map) return defaultCenter()
+  const c = map.getCenter()
+  return [c[0], c[1]]
+}
+
+function emitViewport() {
+  if (!map) return
+  emit('viewportChange', { zoom: map.getZoom(), center: mapCenter() })
 }
 
 function loadYmapsScript(): Promise<void> {
@@ -106,6 +134,12 @@ function setPlacemark(lat: number, lon: number) {
   map.geoObjects.add(placemark)
 }
 
+function bindViewportEvents() {
+  if (!map || viewportListener) return
+  viewportListener = () => emitViewport()
+  map.events.add('boundschange', viewportListener)
+}
+
 async function initMap() {
   if (!mapEl.value) return
   loadError.value = ''
@@ -113,6 +147,10 @@ async function initMap() {
     await loadYmapsScript()
     await new Promise<void>((resolve) => window.ymaps!.ready(resolve))
     if (map) {
+      if (viewportListener) {
+        map.events.remove('boundschange', viewportListener)
+        viewportListener = null
+      }
       map.destroy()
       map = null
       placemark = null
@@ -120,10 +158,20 @@ async function initMap() {
     const center = defaultCenter()
     map = new window.ymaps!.Map(
       mapEl.value,
-      { center, zoom: props.lat != null ? 17 : 11, controls: ['zoomControl'] },
+      { center, zoom: defaultZoom(), controls: ['zoomControl'] },
       { suppressMapOpenBlock: true },
     )
     map.setType('yandex#satellite')
+    map.behaviors.enable('scrollZoom')
+    map.behaviors.enable('drag')
+    map.behaviors.enable('dblClickZoom')
+    map.behaviors.enable('multiTouch')
+    if (!interactive.value) {
+      map.behaviors.disable('scrollZoom')
+      map.behaviors.disable('drag')
+      map.behaviors.disable('dblClickZoom')
+      map.behaviors.disable('multiTouch')
+    }
     if (props.lat != null && props.lon != null) {
       setPlacemark(props.lat, props.lon)
     }
@@ -133,11 +181,17 @@ async function initMap() {
         const lat = coords[0]
         const lon = coords[1]
         setPlacemark(lat, lon)
-        emit('select', { address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`, lat, lon })
+        emitViewport()
+        emit('select', {
+          address: `${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+          lat,
+          lon,
+          zoom: map!.getZoom(),
+          center: mapCenter(),
+        })
       })
-    } else {
-      map.behaviors.disable('scrollZoom')
     }
+    bindViewportEvents()
   } catch (e) {
     scriptPromise = null
     loadError.value = e instanceof Error ? e.message : 'Не удалось загрузить Яндекс.Карты'
@@ -153,7 +207,7 @@ async function geocode(query: string) {
     if (!map) await initMap()
     if (!map) throw new Error('Карта не инициализирована')
     const result = await geocodeAddress(q, props.city ?? '')
-    applyGeocodeResult({ ...result, address: q })
+    applyGeocodeResult({ ...result, address: q, label: result.address })
   } catch (e) {
     loadError.value = e instanceof Error ? e.message : 'Ошибка геокодирования'
   } finally {
@@ -161,11 +215,15 @@ async function geocode(query: string) {
   }
 }
 
+function onWheel(e: WheelEvent) {
+  e.stopPropagation()
+}
+
 watch(
-  () => [props.lat, props.lon] as const,
-  ([lat, lon]) => {
+  () => [props.lat, props.lon, props.zoom] as const,
+  ([lat, lon, zoom]) => {
     if (map && lat != null && lon != null) {
-      map.setCenter([lat, lon], 17)
+      map.setCenter([lat, lon], zoom ?? map.getZoom())
       setPlacemark(lat, lon)
     }
   },
@@ -175,6 +233,10 @@ onMounted(() => { void initMap() })
 
 onUnmounted(() => {
   if (map) {
+    if (viewportListener) {
+      map.events.remove('boundschange', viewportListener)
+      viewportListener = null
+    }
     map.destroy()
     map = null
   }
@@ -184,8 +246,8 @@ defineExpose({ geocode })
 </script>
 
 <template>
-  <div class="map-wrap">
-    <div ref="mapEl" class="map-root" />
+  <div class="map-wrap" @wheel="onWheel">
+    <div ref="mapEl" class="map-root" tabindex="0" />
     <div v-if="loadError" class="map-error">
       <p>{{ loadError }}</p>
       <p v-if="keyResolved && !apiKey" class="map-error-hint">Добавьте ключ в <code>VITE_YANDEX_MAPS_API_KEY</code> (файл <code>web/.env</code>) или <code>YANDEX_MAPS_API_KEY</code> (корневой <code>.env</code> для Docker).</p>
@@ -204,7 +266,7 @@ defineExpose({ geocode })
   border: 1px solid var(--border-secondary-enabled);
   min-height: 360px;
 }
-.map-root { width: 100%; height: 100%; min-height: 360px; }
+.map-root { width: 100%; height: 100%; min-height: 360px; outline: none; }
 .map-error {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 24px; text-align: center; background: rgba(255,255,255,.92); color: var(--red-60);

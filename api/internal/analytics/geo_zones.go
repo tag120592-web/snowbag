@@ -185,10 +185,13 @@ func ApplyGeoRegions(res *ClimateLookupResult, lat, lon float64) bool {
 	if wr, ok := LookupWindRegion(lat, lon); ok {
 		res.WindRegion = wr
 		res.W0 = windPressure(wr)
-		loadClimateDB()
-		if r, ok := climateDB.WindRosesByRegion[wr]; ok && len(r) > 0 {
-			res.WindRose = cloneRose(r)
-			res.Prevailing = prevailingWind(res.WindRose)
+		// Keep settlement-specific SNiP wind rose when city was matched; only fall back to regional rose otherwise.
+		if res.MatchQuality == "default" || res.MatchedCity == "" {
+			loadClimateDB()
+			if r, ok := climateDB.WindRosesByRegion[wr]; ok && len(r) > 0 {
+				res.WindRose = cloneRose(r)
+				res.Prevailing = prevailingWind(res.WindRose)
+			}
 		}
 		applied = true
 	}

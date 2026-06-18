@@ -38,6 +38,7 @@ const props = defineProps<{
   showParapet?: boolean
   orthogonal?: boolean
   transparentBg?: boolean
+  selectedBagId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -52,10 +53,10 @@ const emit = defineEmits<{
   sensorMove: [id: string, x: number, y: number]
 }>()
 
-const riskColors: Record<string, { fill: string; soft: string }> = {
-  critical: { fill: 'var(--red-60)', soft: 'var(--red-10)' },
-  high: { fill: 'var(--orange-40)', soft: 'var(--orange-10)' },
-  medium: { fill: 'var(--yellow-30)', soft: 'var(--yellow-10)' },
+const riskColors: Record<string, { fill: string; soft: string; line: string }> = {
+  critical: { fill: 'var(--red-60)', soft: 'var(--red-10)', line: 'var(--red-65)' },
+  high: { fill: 'var(--orange-40)', soft: 'var(--orange-10)', line: 'var(--orange-50)' },
+  medium: { fill: 'var(--yellow-30)', soft: 'var(--yellow-10)', line: 'var(--yellow-40)' },
 }
 
 const svgRef = ref<SVGSVGElement | null>(null)
@@ -105,6 +106,16 @@ const roofSelected = computed(() => props.editTarget === 'roof')
 function ptsStr(pts: number[][]) {
   return pts.map((p) => p.join(',')).join(' ')
 }
+
+function polyCentroid(pts: number[][]) {
+  const n = pts.length || 1
+  return [
+    pts.reduce((s, p) => s + p[0], 0) / n,
+    pts.reduce((s, p) => s + p[1], 0) / n,
+  ]
+}
+
+const bagRiskKeys = ['critical', 'high', 'medium'] as const
 
 function getSvg(): SVGSVGElement | null {
   return svgRef.value
@@ -494,6 +505,27 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
     >
       <rect x="0" y="0" width="1000" height="680" :fill="transparentBg ? 'transparent' : 'var(--neutral-15)'" />
 
+      <defs v-if="show.bags && calculation?.snowbags?.length">
+        <radialGradient
+          v-for="risk in bagRiskKeys"
+          :id="`baggrad-${risk}`"
+          :key="risk"
+          cx="50%"
+          cy="50%"
+          r="62%"
+        >
+          <stop offset="0%" :stop-color="riskColors[risk].fill" stop-opacity="0.62" />
+          <stop offset="55%" :stop-color="riskColors[risk].fill" stop-opacity="0.34" />
+          <stop offset="100%" :stop-color="riskColors[risk].fill" stop-opacity="0" />
+        </radialGradient>
+        <filter id="bagblur" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="10" />
+        </filter>
+        <clipPath v-if="geometry.roof?.length" id="roofclip">
+          <polygon :points="ptsStr(geometry.roof)" />
+        </clipPath>
+      </defs>
+
       <image
         v-if="show.underlay && underlayUrl"
         :href="underlayUrl"
@@ -749,25 +781,47 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
       </g>
 
       <g v-if="show.bags && calculation?.snowbags?.length">
-        <polygon
+        <g v-if="geometry.roof?.length" clip-path="url(#roofclip)">
+          <polygon
+            v-for="bag in calculation.snowbags"
+            :key="`${bag.id}-fill`"
+            :points="ptsStr(bag.poly)"
+            :fill="`url(#baggrad-${bag.risk})`"
+            filter="url(#bagblur)"
+          />
+        </g>
+        <template v-else>
+          <polygon
+            v-for="bag in calculation.snowbags"
+            :key="`${bag.id}-fill`"
+            :points="ptsStr(bag.poly)"
+            :fill="`url(#baggrad-${bag.risk})`"
+            filter="url(#bagblur)"
+          />
+        </template>
+        <g
           v-for="bag in calculation.snowbags"
           :key="bag.id"
-          :points="ptsStr(bag.poly)"
-          :fill="riskColors[bag.risk]?.soft ?? 'var(--red-10)'"
-          :stroke="riskColors[bag.risk]?.fill ?? 'var(--red-60)'"
-          stroke-width="1.5"
-          opacity="0.85"
-        />
-        <text
-          v-for="bag in calculation.snowbags"
-          :key="`${bag.id}-lbl`"
-          :x="bag.poly.reduce((s, p) => s + p[0], 0) / bag.poly.length"
-          :y="bag.poly.reduce((s, p) => s + p[1], 0) / bag.poly.length + 4"
-          text-anchor="middle"
-          font-size="12"
-          font-weight="800"
-          :fill="riskColors[bag.risk]?.fill ?? 'var(--red-60)'"
-        >{{ bag.id }}</text>
+          class="bag-zone"
+          :class="{ selected: selectedBagId === bag.id }"
+        >
+          <polygon
+            :points="ptsStr(bag.poly)"
+            fill="transparent"
+            :stroke="riskColors[bag.risk]?.line ?? 'var(--red-60)'"
+            :stroke-width="selectedBagId === bag.id ? 2.5 : 1.1"
+            stroke-dasharray="5 4"
+            :stroke-opacity="selectedBagId === bag.id ? 0.95 : 0.45"
+          />
+          <text
+            :x="polyCentroid(bag.poly)[0]"
+            :y="polyCentroid(bag.poly)[1] + 4"
+            text-anchor="middle"
+            font-size="12"
+            font-weight="800"
+            :fill="riskColors[bag.risk]?.line ?? 'var(--red-60)'"
+          >{{ bag.id }}</text>
+        </g>
       </g>
 
       <g v-if="show.sensors && calculation?.sensors?.length">

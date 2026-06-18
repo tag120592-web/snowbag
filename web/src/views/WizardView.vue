@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import RoofCanvas from '@/components/RoofCanvas.vue'
 import StepUpload from '@/components/StepUpload.vue'
-import type { UploadedFileItem } from '@/components/StepUpload.vue'
+import type { CalcMetaFields, UploadedFileItem } from '@/components/StepUpload.vue'
 import {
   calculateProject,
   downloadExport,
@@ -40,6 +40,7 @@ import {
   parseParapetMm,
   roofSideCount,
   sideLabel,
+  elementSideCount,
 } from '@/composables/useRoofDrawing'
 import { parseCityFromAddress } from '@/utils/address'
 import { parseUnderlayPageFromName } from '@/utils/pdfPage'
@@ -55,6 +56,8 @@ const uploadScale = ref<string | null>(null)
 const mapAddress = ref('')
 const mapLat = ref<number | null>(null)
 const mapLon = ref<number | null>(null)
+const mapZoom = ref<number | null>(null)
+const mapCenter = ref<[number, number] | null>(null)
 const mapSelected = ref(false)
 const step = ref(0)
 const maxReached = ref(0)
@@ -88,9 +91,23 @@ const climatePreview = ref<ClimateLookupResult | null>(null)
 const climateLoading = ref(false)
 let skipClimateWatch = false
 
+function dataSourceStorageKey(id: string) {
+  return `snowbag-data-source-${id}`
+}
+
+function loadStoredDataSource(id: string): 'file' | 'map' | null {
+  const v = localStorage.getItem(dataSourceStorageKey(id))
+  return v === 'file' || v === 'map' ? v : null
+}
+
+function storeDataSource(id: string, source: 'file' | 'map') {
+  localStorage.setItem(dataSourceStorageKey(id), source)
+}
+
 const snowRegion = ref('III')
 const windRegion = ref('II')
 const northDeg = ref(-18)
+const selectedBagId = ref<string | null>(null)
 const archiveView = ref(false)
 const archiveLabel = ref('')
 
@@ -152,6 +169,12 @@ function applyProjectMeta() {
       walkway: undefined,
     }
     roofName.value = project.value.geometry.roofName ?? 'Контур кровли'
+    if (geometry.value.roof?.length) {
+      geometry.value = {
+        ...geometry.value,
+        sideParapets: syncSideParapets(geometry.value.roof),
+      }
+    }
   } else {
     geometry.value = { ...EMPTY_GEOMETRY, obstacles: [] }
     roofName.value = 'Контур кровли'
@@ -180,7 +203,10 @@ function applyProjectMeta() {
   mapSelected.value =
     (!!project.value.address && project.value.address !== 'Укажите адрес объекта')
     || (mapLat.value != null && mapLon.value != null)
-  if (hasUnderlay.value) {
+  const storedSource = projectId.value ? loadStoredDataSource(projectId.value) : null
+  if (storedSource) {
+    primarySource.value = storedSource
+  } else if (hasUnderlay.value) {
     primarySource.value = 'file'
   } else if (mapSelected.value) {
     primarySource.value = 'map'
@@ -277,7 +303,8 @@ async function refreshClimate() {
 const sgKgLabel = computed(() => {
   const sg = climatePreview.value?.sg
   if (sg == null) return '—'
-  return String(Math.round(sg * 102)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  // 1 kPa (kN/m²) ≈ 1000/9.80665 kg/m² — matches SNiP reference tables (e.g. 1.8 kPa → 184 kg/m²)
+  return String(Math.round((sg * 1000) / 9.80665)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 })
 
 const climateWindRose = computed(() => {
@@ -417,6 +444,7 @@ async function uploadUnderlayFile(file: File, meta?: { page?: number }) {
     } else {
       hasUnderlay.value = true
       primarySource.value = 'file'
+      if (projectId.value) storeDataSource(projectId.value, 'file')
       showUnderlay.value = true
       underlayUrl.value = projectUnderlayUrl(projectId.value)
       underlayVersion.value += 1
@@ -474,8 +502,11 @@ async function onMapSelect(payload: MapSelectPayload) {
   mapAddress.value = payload.address
   mapLat.value = payload.lat
   mapLon.value = payload.lon
+  if (payload.zoom != null) mapZoom.value = payload.zoom
+  if (payload.center) mapCenter.value = payload.center
   mapSelected.value = true
   primarySource.value = 'map'
+  if (projectId.value) storeDataSource(projectId.value, 'map')
   const city = parseCityFromAddress(payload.address)
   if (!projectId.value) return
   try {
@@ -490,10 +521,39 @@ async function onMapSelect(payload: MapSelectPayload) {
   }
 }
 
+function onMapViewportChange(payload: { zoom: number; center: [number, number] }) {
+  mapZoom.value = payload.zoom
+  mapCenter.value = payload.center
+}
+
 const isFreshProject = computed(() => {
   if (route.query.new === '1') return true
   return !hasUnderlay.value && !(project.value?.geometry?.roof?.length) && uploadedFiles.value.length === 0
 })
+
+const calcMeta = computed<CalcMetaFields>(() => ({
+  name: project.value?.name ?? '',
+  city: project.value?.city ?? '',
+  number: project.value?.number ?? '',
+  calcNo: project.value?.calcNo ?? '',
+  customer: project.value?.customer ?? '',
+}))
+
+async function onCalcMetaUpdate(payload: Partial<CalcMetaFields>) {
+  if (archiveView.value || !projectId.value) return
+  const body: Record<string, string> = {}
+  if (payload.name !== undefined) body.name = payload.name
+  if (payload.city !== undefined) body.city = payload.city
+  if (payload.number !== undefined) body.number = payload.number
+  if (payload.calcNo !== undefined) body.calcNo = payload.calcNo
+  if (payload.customer !== undefined) body.customer = payload.customer
+  if (!Object.keys(body).length) return
+  try {
+    project.value = await updateProject(projectId.value, body)
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : 'Не удалось сохранить данные расчёта'
+  }
+}
 
 function openAddDialog() {
   pickedTool.value = null
@@ -569,7 +629,14 @@ function updateSideParapet(index: number, value: number) {
 
 function onObstacleAdd(o: Obstacle) {
   const id = `${o.short?.toLowerCase().replace(/\s+/g, '-') ?? 'el'}-${Date.now()}`
-  const obstacle = { ...o, id, name: o.name ?? o.short }
+  const obstacle = {
+    ...o,
+    id,
+    name: o.name ?? o.short,
+    ...(o.shape === 'polyline' && o.points?.length
+      ? { sideHeights: syncPolylineSideHeights(o.points) }
+      : {}),
+  }
   geometry.value = {
     ...geometry.value,
     obstacles: [...(geometry.value.obstacles ?? []), obstacle],
@@ -579,9 +646,13 @@ function onObstacleAdd(o: Obstacle) {
 }
 
 function onObstacleChange(o: Obstacle) {
+  const next = { ...o }
+  if (next.shape === 'polyline' && next.points?.length) {
+    next.sideHeights = syncPolylineSideHeights(next.points, next.sideHeights ?? [])
+  }
   geometry.value = {
     ...geometry.value,
-    obstacles: (geometry.value.obstacles ?? []).map((x) => (x.id === o.id ? { ...o } : x)),
+    obstacles: (geometry.value.obstacles ?? []).map((x) => (x.id === next.id ? next : x)),
   }
 }
 
@@ -627,6 +698,36 @@ const roofLengthLabel = computed(() => {
 
 const sideParapetsList = computed(() => ensureSideParapets())
 
+const roofSideIndices = computed(() => {
+  const count = roofSideCount(geometry.value.roof ?? [])
+  return Array.from({ length: count }, (_, i) => i)
+})
+
+function syncPolylineSideHeights(points: number[][], prev: number[] = []): number[] {
+  const count = elementSideCount(points, false)
+  return Array.from({ length: count }, (_, i) => prev[i] ?? DEFAULT_PARAPET_M)
+}
+
+function obstacleSideHeights(obs: Obstacle): number[] {
+  if (obs.shape !== 'polyline' || !obs.points?.length) return []
+  return syncPolylineSideHeights(obs.points, obs.sideHeights ?? [])
+}
+
+function updateObstacleSideHeight(id: string, index: number, value: number) {
+  const obs = geometry.value.obstacles?.find((o) => o.id === id)
+  if (!obs?.points?.length) return
+  const sides = syncPolylineSideHeights(obs.points, obs.sideHeights ?? [])
+  sides[index] = Math.max(0, value)
+  onObstacleChange({ ...obs, sideHeights: sides })
+}
+
+const selectedObstacleSideIndices = computed(() => {
+  const obs = selectedObstacle.value
+  if (!obs || obs.shape !== 'polyline' || !obs.points?.length) return []
+  const count = elementSideCount(obs.points, false)
+  return Array.from({ length: count }, (_, i) => i)
+})
+
 const cityFromAddress = computed(() => parseCityFromAddress(mapAddress.value || project.value?.address || ''))
 
 const climateCityLabel = computed(() => cityFromAddress.value || project.value?.city || '')
@@ -640,10 +741,12 @@ const showMapUnderlay = computed(() =>
 )
 
 const showFileUnderlay = computed(() =>
-  STEPS[step.value]?.id === 'roof'
+  ['roof', 'climate'].includes(STEPS[step.value]?.id ?? '')
   && hasUnderlay.value
   && primarySource.value !== 'map',
 )
+
+const showUnderlayToggle = computed(() => showFileUnderlay.value)
 
 function deleteSelected() {
   const t = editTarget.value
@@ -741,10 +844,10 @@ const canvasLayers = computed(() => {
     return { roof: false, underlay: false, obstacles: false, bags: false, sensors: false, wind: false }
   }
   const hasGeometry = !!(geometry.value.roof?.length)
-  const onRoofStep = id === 'roof'
+  const showUnderlayLayer = showFileUnderlay.value && showUnderlay.value
   return {
     roof: hasGeometry,
-    underlay: onRoofStep && showFileUnderlay.value && showUnderlay.value,
+    underlay: showUnderlayLayer,
     obstacles: id !== 'upload',
     walkway: false,
     parapet: id === 'roof' || id === 'bags' || id === 'result',
@@ -753,6 +856,10 @@ const canvasLayers = computed(() => {
     wind: id === 'climate' || id === 'bags' || id === 'result',
   }
 })
+
+function selectBag(id: string) {
+  selectedBagId.value = selectedBagId.value === id ? null : id
+}
 
 const showParapet = computed(() => parapetMm.value > 0)
 
@@ -800,9 +907,12 @@ const roofElements = computed(() =>
         :is-fresh="isFreshProject"
         :files="uploadedFiles"
         :scale="uploadScale"
+        :calc-meta="calcMeta"
+        :calc-meta-readonly="archiveView"
         :map-address="mapAddress"
         :map-lat="mapLat"
         :map-lon="mapLon"
+        :map-zoom="mapZoom"
         :map-city="project?.city ?? ''"
         :map-selected="mapSelected"
         :underlay-src="underlaySrc"
@@ -813,20 +923,22 @@ const roofElements = computed(() =>
         :uploading="uploading"
         @file-select="onFileSelect"
         @map-select="onMapSelect"
+        @map-viewport-change="onMapViewportChange"
         @pdf-page-confirm="onPdfPageConfirm"
         @pdf-pick-cancel="onPdfPickerCancel"
+        @calc-meta-update="onCalcMetaUpdate"
       />
 
       <template v-else>
       <div class="canvas-pane">
         <div
-          v-if="STEPS[step].id === 'roof' && showFileUnderlay"
+          v-if="showUnderlayToggle"
           class="underlay-toggle"
         >
           <button type="button" class="toggle-track" :class="{ on: showUnderlay }" @click="showUnderlay = !showUnderlay">
             <span class="toggle-thumb" />
           </button>
-          <span class="toggle-label">Подложка (оригинал)</span>
+          <span class="toggle-label">{{ showMapUnderlay ? 'Карта-подложка' : 'Подложка (оригинал)' }}</span>
         </div>
         <div
           v-if="STEPS[step].id === 'roof' && drawSession"
@@ -848,6 +960,7 @@ const roofElements = computed(() =>
             :address="mapAddress"
             :lat="mapLat"
             :lon="mapLon"
+            :zoom="mapZoom"
             :city="project?.city ?? ''"
             :interactive="false"
           />
@@ -859,6 +972,7 @@ const roofElements = computed(() =>
             :north-deg="northDeg"
             :underlay-url="underlaySrc"
             :view3d="view3d && ['bags', 'result'].includes(STEPS[step].id)"
+            :selected-bag-id="selectedBagId"
             :editable="STEPS[step].id === 'roof' && !archiveView"
             :editable-sensors="STEPS[step].id === 'bags' && !archiveView"
             :draw-session="STEPS[step].id === 'roof' ? drawSession : null"
@@ -910,7 +1024,7 @@ const roofElements = computed(() =>
               </button>
               <div v-if="roofExpanded && geometry.roof?.length" class="roof-sides">
                 <div
-                  v-for="(_, i) in sideParapetsList"
+                  v-for="i in roofSideIndices"
                   :key="`side-${i}`"
                   class="side-row"
                 >
@@ -956,25 +1070,49 @@ const roofElements = computed(() =>
                 @input="updateObstacleName(selectedObstacle.id, ($event.target as HTMLInputElement).value)"
               />
             </label>
-            <label>Высота, м
+            <template v-if="selectedObstacle.shape === 'polyline' && selectedObstacle.points?.length">
+              <div class="roof-sides obstacle-sides">
+                <div
+                  v-for="i in selectedObstacleSideIndices"
+                  :key="`obs-side-${i}`"
+                  class="side-row"
+                >
+                  <span class="side-label">{{ sideLabel(i) }}</span>
+                  <label class="side-parapet">
+                    <span>высота, м</span>
+                    <input
+                      :value="obstacleSideHeights(selectedObstacle)[i]"
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="0.1"
+                      @input="updateObstacleSideHeight(selectedObstacle.id, i, Number(($event.target as HTMLInputElement).value))"
+                    />
+                  </label>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <label>Высота, м
+                <input
+                  :value="selectedObstacle.hM ?? 0"
+                  type="number"
+                  min="0"
+                  max="50"
+                  step="0.1"
+                  @input="updateObstacleHeight(selectedObstacle.id, Number(($event.target as HTMLInputElement).value))"
+                />
+              </label>
               <input
                 :value="selectedObstacle.hM ?? 0"
-                type="number"
+                type="range"
                 min="0"
-                max="50"
+                max="12"
                 step="0.1"
+                class="height-range"
                 @input="updateObstacleHeight(selectedObstacle.id, Number(($event.target as HTMLInputElement).value))"
               />
-            </label>
-            <input
-              :value="selectedObstacle.hM ?? 0"
-              type="range"
-              min="0"
-              max="12"
-              step="0.1"
-              class="height-range"
-              @input="updateObstacleHeight(selectedObstacle.id, Number(($event.target as HTMLInputElement).value))"
-            />
+            </template>
           </div>
         </template>
 
@@ -1054,7 +1192,12 @@ const roofElements = computed(() =>
           <p class="hint">Перетащите датчики на схеме, затем пересчитайте при необходимости.</p>
           <button type="button" class="btn" :disabled="archiveView" @click="recalcWithSensors">Пересчитать с учётом датчиков</button>
           <ul class="list bag-list">
-            <li v-for="bag in calculation?.snowbags" :key="bag.id">
+            <li
+              v-for="bag in calculation?.snowbags"
+              :key="bag.id"
+              :class="{ active: selectedBagId === bag.id }"
+              @click="selectBag(bag.id)"
+            >
               <strong>{{ bag.id }}</strong> — {{ bag.name }}
               <span v-if="bag.scheme" class="bag-scheme">{{ bag.scheme }}</span>
               <span v-if="bag.riskClass" class="bag-risk" :class="bag.risk">{{ bag.riskClass }}</span>
@@ -1270,7 +1413,9 @@ const roofElements = computed(() =>
 }
 .list { padding-left: 18px; line-height: 1.8; }
 .bag-list { list-style: none; padding-left: 0; display: flex; flex-direction: column; gap: 10px; }
-.bag-list li { border: 1px solid var(--border-secondary-enabled); border-radius: var(--radius-md); padding: 10px 12px; }
+.bag-list li { border: 1px solid var(--border-secondary-enabled); border-radius: var(--radius-md); padding: 10px 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.bag-list li.active { border-color: var(--red-60); background: var(--red-10); }
+.obstacle-sides { margin-top: 8px; border-radius: var(--radius-md); }
 .bag-meta { font-size: 12px; color: var(--content-tertiary-enabled); margin-top: 4px; }
 .bag-scheme { font-size: 11px; font-weight: 700; color: var(--content-secondary-enabled); margin-left: 6px; padding: 2px 6px; background: var(--neutral-10); border-radius: 4px; }
 .bag-risk { font-size: 11px; font-weight: 800; margin-left: 6px; }
