@@ -195,6 +195,7 @@ type ThermalResult struct {
 // VaporResult — результат расчёта влагонакопления (п. «Результат» алгоритма, разд. 8 СП 50).
 type VaporResult struct {
 	MaxMoisturePlane string  `json:"maxMoisturePlane"` // положение плоскости максимального увлажнения
+	PlaneLayerIndex  int     `json:"planeLayerIndex"`  // индекс слоя плоскости (в порядке снаружи→внутрь)
 	Rvp              float64 `json:"rvp"`              // фактическое сопротивление паропроницанию Rп
 	RvpReq1          float64 `json:"rvpReq1"`          // Rптр1 — за годовой период (ф. 8.1)
 	RvpReq2          float64 `json:"rvpReq2"`          // Rптр2 — за период влагонакопления (ф. 8.2)

@@ -126,6 +126,7 @@ func ComputeVapor(in model.ThermalInput, sys model.ThermalSystem, clim VaporClim
 
 	return model.VaporResult{
 		MaxMoisturePlane: planeDescription(planeLayer, planeIdx, len(layers)),
+		PlaneLayerIndex:  planeIdx,
 		Rvp:              round2(planeRpInner),
 		RvpReq1:          round2(rTr1),
 		RvpReq2:          round2(rTr2),

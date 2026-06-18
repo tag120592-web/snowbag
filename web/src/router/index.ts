@@ -7,5 +7,6 @@ export default createRouter({
   routes: [
     { path: '/', name: 'projects', component: ProjectsView },
     { path: '/wizard/:id?', name: 'wizard', component: WizardView },
+    { path: '/thermal', name: 'thermal', component: () => import('@/views/ThermalView.vue') },
   ],
 })

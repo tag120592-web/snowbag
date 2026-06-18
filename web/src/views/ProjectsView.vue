@@ -70,9 +70,12 @@ function selectRun(projectId: string, run: CalculationRunItem) {
 
 async function openProject(p: ProjectListItem) {
   const runId = selectedRunId.value[p.id]
-  const query: Record<string, string> = {}
-  if (runId) query.runId = runId
-  await router.push({ name: 'wizard', params: { id: p.id }, query })
+  if (runId) {
+    await router.push({ name: 'wizard', params: { id: p.id }, query: { runId } })
+    return
+  }
+  // Платформа: сначала выбор расчётов для объекта.
+  await router.push({ name: 'thermal', query: { project: p.id } })
 }
 
 async function newProject() {
@@ -82,7 +85,7 @@ async function newProject() {
       city: '',
       address: '',
     })
-    await router.push({ name: 'wizard', params: { id: p.id }, query: { new: '1' } })
+    await router.push({ name: 'thermal', query: { project: p.id, new: '1' } })
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Не удалось создать проект'
   }

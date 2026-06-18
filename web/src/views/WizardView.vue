@@ -5,6 +5,10 @@ import AppHeader from '@/components/AppHeader.vue'
 import RoofCanvas from '@/components/RoofCanvas.vue'
 import StepUpload from '@/components/StepUpload.vue'
 import type { CalcMetaFields, UploadedFileItem } from '@/components/StepUpload.vue'
+import ThermoParamsStep from '@/components/thermal/ThermoParamsStep.vue'
+import ThermoHeteroStep from '@/components/thermal/ThermoHeteroStep.vue'
+import ThermoResultStep from '@/components/thermal/ThermoResultStep.vue'
+import { useThermalCalc } from '@/composables/useThermalCalc'
 import {
   calculateProject,
   downloadExport,
@@ -66,6 +70,45 @@ const mapSelected = ref(false)
 const step = ref(0)
 const maxReached = ref(0)
 const calculating = ref(false)
+
+// Платформа: выбранные расчёты из адреса (?calc=snow,thermal). По умолчанию — снег.
+const calcQuery = String(route.query.calc ?? 'snow')
+const modules = ref({ snow: calcQuery.includes('snow'), thermal: calcQuery.includes('thermal') })
+if (!modules.value.snow && !modules.value.thermal) modules.value.snow = true
+// Динамическая сборка шагов: общие → снег → теплотехника → результат.
+const stepDef = (id: string) => STEPS.find((s) => s.id === id)!
+function buildSteps(m: { snow: boolean; thermal: boolean }) {
+  const out: { id: string; n: number; label: string }[] = [stepDef('upload'), stepDef('roof')]
+  if (m.snow) out.push(stepDef('climate'), stepDef('bags'))
+  if (m.thermal) out.push({ id: 'thermo-params', n: 0, label: 'Теплотехника · состав' }, { id: 'thermo-hetero', n: 0, label: 'Неоднородности' })
+  out.push(stepDef('result'))
+  return out.map((x, i) => ({ ...x, n: i + 1 }))
+}
+const steps = computed(() => buildSteps(modules.value))
+
+// Теплотехника: общая логика расчёта (для тепло-шагов).
+const therm = useThermalCalc()
+const isThermalStep = computed(() => ['thermo-params', 'thermo-hetero'].includes(steps.value[step.value]?.id ?? ''))
+const isThermalResult = computed(() => steps.value[step.value]?.id === 'result' && modules.value.thermal && !modules.value.snow)
+// Единый результат (оба расчёта): вкладки «Снег / Теплотехника».
+const resultTab = ref<'snow' | 'thermal'>('thermal')
+const bothResult = computed(() => steps.value[step.value]?.id === 'result' && modules.value.snow && modules.value.thermal)
+const showThermalResultPanel = computed(() => isThermalResult.value || (bothResult.value && resultTab.value === 'thermal'))
+let thermalReady = false
+async function initThermal() {
+  if (!modules.value.thermal || !projectId.value || thermalReady) return
+  thermalReady = true
+  therm.reset(projectId.value)
+  await therm.loadGeometry()
+  therm.setGeometry(geometry.value) // живая геометрия из мастера — приоритет
+  await therm.runCalc()
+}
+watch(step, () => {
+  if (isThermalStep.value || isThermalResult.value) {
+    therm.setGeometry(geometry.value) // подхватить свежие элементы, нарисованные на шаге «Геометрия»
+    void initThermal()
+  }
+})
 const calcProgress = ref(0)
 const saving = ref(false)
 const uploading = ref(false)
@@ -172,15 +215,15 @@ async function loadProject() {
       applyRunSnapshot(run)
       archiveView.value = true
       archiveLabel.value = `${run.calcNo} · ${run.created}`
-      maxReached.value = STEPS.length - 1
-      step.value = STEPS.length - 1
+      maxReached.value = steps.value.length - 1
+      step.value = steps.value.length - 1
       return
     }
 
     if (project.value.calculation && Object.keys(project.value.calculation).length) {
       calculation.value = project.value.calculation
-      maxReached.value = STEPS.length - 1
-      step.value = STEPS.length - 1
+      maxReached.value = steps.value.length - 1
+      step.value = steps.value.length - 1
     }
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Проект не найден'
@@ -271,18 +314,18 @@ function applyRunSnapshot(run: CalculationRunSnapshot) {
 
 watch(() => project.value?.city, async (city) => {
   if (!city) return
-  if (STEPS[step.value]?.id === 'climate') {
+  if (steps.value[step.value]?.id === 'climate') {
     await resolveClimateFromCoords()
   }
 })
 
 watch([snowRegion, windRegion], () => {
   if (skipClimateWatch) return
-  if (STEPS[step.value]?.id === 'climate') void refreshClimate()
+  if (steps.value[step.value]?.id === 'climate') void refreshClimate()
 })
 
 watch(step, async (i) => {
-  if (STEPS[i]?.id === 'climate') {
+  if (steps.value[i]?.id === 'climate') {
     const city = parseCityFromAddress(mapAddress.value || project.value?.address || '')
     if (city && projectId.value && city !== project.value?.city && !archiveView.value) {
       try {
@@ -343,7 +386,7 @@ const sgKgLabel = computed(() => {
 })
 
 const climateWindRose = computed(() => {
-  if (STEPS[step.value]?.id === 'climate' && climatePreview.value?.windRose?.length) {
+  if (steps.value[step.value]?.id === 'climate' && climatePreview.value?.windRose?.length) {
     return climatePreview.value.windRose
   }
   return calculation.value?.windRose
@@ -388,17 +431,19 @@ async function saveDraft() {
 
 async function next() {
   if (archiveView.value) return
-  const id = STEPS[step.value].id
+  const id = steps.value[step.value].id
   if (id === 'roof') {
     await saveDraft()
   }
   if (id === 'climate') {
     await saveDraft()
     const ok = await runCalculate()
-    if (!ok && step.value < STEPS.length - 1) goStep(3)
+    if (!ok && step.value < steps.value.length - 1) goStep(3)
     return
   }
-  if (step.value < STEPS.length - 1) goStep(step.value + 1)
+  if (id === 'thermo-params') await initThermal()
+  if (id === 'thermo-hetero') await therm.runCalc()
+  if (step.value < steps.value.length - 1) goStep(step.value + 1)
 }
 
 function back() {
@@ -799,7 +844,7 @@ const cityFromAddress = computed(() => parseCityFromAddress(mapAddress.value || 
 const climateCityLabel = computed(() => cityFromAddress.value || project.value?.city || '')
 
 const showMapUnderlay = computed(() =>
-  STEPS[step.value]?.id === 'roof'
+  steps.value[step.value]?.id === 'roof'
   && primarySource.value === 'map'
   && mapSelected.value
   && mapLat.value != null
@@ -812,7 +857,7 @@ const mapUnderlayNavigable = computed(() =>
 )
 
 const showFileUnderlay = computed(() =>
-  ['roof', 'climate'].includes(STEPS[step.value]?.id ?? '')
+  ['roof', 'climate'].includes(steps.value[step.value]?.id ?? '')
   && hasUnderlay.value
   && primarySource.value !== 'map',
 )
@@ -883,9 +928,11 @@ async function runCalculateWithSensors(sensors: Sensor[]) {
 
 const footerLabel = computed(() => {
   if (archiveView.value) return 'На главную'
-  const id = STEPS[step.value].id
+  const id = steps.value[step.value].id
   if (id === 'climate') return 'Рассчитать мешки'
   if (id === 'bags') return 'Сформировать схему'
+  if (id === 'thermo-params') return 'Далее'
+  if (id === 'thermo-hetero') return 'Рассчитать теплотехнику'
   if (id === 'result') return 'Экспорт JSON'
   if (id === 'roof') return 'Подтвердить и далее'
   return 'Далее'
@@ -896,7 +943,7 @@ function onFooterNext() {
     void router.push('/')
     return
   }
-  const id = STEPS[step.value].id
+  const id = steps.value[step.value].id
   if (id === 'result') {
     void downloadExport(projectId.value!, 'json')
     return
@@ -910,7 +957,7 @@ const roofAreaLabel = computed(() => {
 })
 
 const canvasLayers = computed(() => {
-  const id = STEPS[step.value].id
+  const id = steps.value[step.value].id
   if (id === 'upload') {
     return { roof: false, underlay: false, obstacles: false, bags: false, sensors: false, wind: false }
   }
@@ -1056,7 +1103,7 @@ const roofElements = computed(() =>
 
     <nav class="stepper">
       <button
-        v-for="(s, i) in STEPS"
+        v-for="(s, i) in steps"
         :key="s.id"
         type="button"
         class="step"
@@ -1068,6 +1115,12 @@ const roofElements = computed(() =>
         <span class="label">{{ s.label }}</span>
       </button>
     </nav>
+
+    <div v-if="bothResult" class="result-tabs">
+      <span class="rt-label">Результаты:</span>
+      <button type="button" :class="{ active: resultTab === 'snow' }" @click="resultTab = 'snow'">❄️ Снеговые мешки</button>
+      <button type="button" :class="{ active: resultTab === 'thermal' }" @click="resultTab = 'thermal'">🌡️ Теплотехника</button>
+    </div>
 
     <p v-if="error" class="error">{{ error }}</p>
 
@@ -1085,7 +1138,7 @@ const roofElements = computed(() =>
 
     <div v-else class="work">
       <StepUpload
-        v-if="STEPS[step].id === 'upload'"
+        v-if="steps[step].id === 'upload'"
         :is-fresh="isFreshProject"
         :files="uploadedFiles"
         :scale="uploadScale"
@@ -1112,6 +1165,10 @@ const roofElements = computed(() =>
         @calc-meta-update="onCalcMetaUpdate"
       />
 
+      <ThermoParamsStep v-else-if="steps[step].id === 'thermo-params'" />
+      <ThermoHeteroStep v-else-if="steps[step].id === 'thermo-hetero'" />
+      <ThermoResultStep v-else-if="showThermalResultPanel" />
+
       <template v-else>
       <div class="canvas-pane">
         <div
@@ -1124,7 +1181,7 @@ const roofElements = computed(() =>
           <span class="toggle-label">{{ showMapUnderlay ? 'Карта-подложка' : 'Подложка (оригинал)' }}</span>
         </div>
         <div
-          v-if="STEPS[step].id === 'roof' && drawSession"
+          v-if="steps[step].id === 'roof' && drawSession"
           class="draw-banner"
         >
           <span>{{ drawBannerLabel }}</span>
@@ -1157,15 +1214,15 @@ const roofElements = computed(() =>
             :calculation="calculation"
             :north-deg="northDeg"
             :underlay-url="underlaySrc"
-            :view3d="view3d && ['bags', 'result'].includes(STEPS[step].id)"
+            :view3d="view3d && ['bags', 'result'].includes(steps[step].id)"
             :selected-bag-id="selectedBagId"
             :selected-sensor-id="selectedSensorId"
-            :editable="STEPS[step].id === 'roof' && !archiveView"
-            :editable-sensors="STEPS[step].id === 'bags' && !archiveView"
-            :editable-bags="STEPS[step].id === 'bags' && !archiveView"
-            :draw-session="STEPS[step].id === 'roof' ? drawSession : null"
-            :edit-target="STEPS[step].id === 'roof' ? editTarget : null"
-            :highlighted-side-index="STEPS[step].id === 'roof' ? highlightedRoofSide : null"
+            :editable="steps[step].id === 'roof' && !archiveView"
+            :editable-sensors="steps[step].id === 'bags' && !archiveView"
+            :editable-bags="steps[step].id === 'bags' && !archiveView"
+            :draw-session="steps[step].id === 'roof' ? drawSession : null"
+            :edit-target="steps[step].id === 'roof' ? editTarget : null"
+            :highlighted-side-index="steps[step].id === 'roof' ? highlightedRoofSide : null"
             :show-parapet="showParapet"
             :orthogonal="orthogonalMode"
             :transparent-bg="showMapUnderlay"
@@ -1185,17 +1242,17 @@ const roofElements = computed(() =>
             @edit-clear="clearEditSelection"
           />
         </div>
-        <div v-if="['bags', 'result'].includes(STEPS[step].id)" class="canvas-tools">
+        <div v-if="['bags', 'result'].includes(steps[step].id)" class="canvas-tools">
           <button type="button" class="tool" :class="{ active: !view3d }" @click="view3d = false">2D</button>
           <button type="button" class="tool" :class="{ active: view3d }" @click="view3d = true">3D</button>
         </div>
-        <div v-if="view3d && ['bags', 'result'].includes(STEPS[step].id)" class="heatmap-hint">
+        <div v-if="view3d && ['bags', 'result'].includes(steps[step].id)" class="heatmap-hint">
           Тепловая карта толщины снега · сугробы ограничены высотой парапета
         </div>
       </div>
 
       <aside class="panel">
-        <template v-if="STEPS[step].id === 'roof'">
+        <template v-if="steps[step].id === 'roof'">
           <h3>Геометрия кровли</h3>
           <p>Обведите контур на {{ showMapUnderlay ? 'карте' : showFileUnderlay ? 'чертеже' : 'плане' }} и добавьте элементы.</p>
 
@@ -1313,7 +1370,7 @@ const roofElements = computed(() =>
           </div>
         </template>
 
-        <template v-else-if="STEPS[step].id === 'climate'">
+        <template v-else-if="steps[step].id === 'climate'">
           <h3>Ориентация и климат</h3>
           <p class="hint climate-norm">
             {{ climatePreview?.norm ?? 'СНиП 2.01.01-82' }}
@@ -1375,7 +1432,7 @@ const roofElements = computed(() =>
           </div>
         </template>
 
-        <template v-else-if="STEPS[step].id === 'bags'">
+        <template v-else-if="steps[step].id === 'bags'">
           <h3>Снеговые мешки и датчики</h3>
           <div v-if="calculation?.metrics" class="metrics">
             <div><span>Мешки</span><strong>{{ calculation.metrics.bagsArea }} м²</strong></div>
@@ -1473,7 +1530,7 @@ const roofElements = computed(() =>
 
     <footer v-if="!calculating" class="footer">
       <button class="btn" :disabled="step === 0" @click="back">← Назад</button>
-      <span class="step-info">Шаг {{ step + 1 }} из {{ STEPS.length }}</span>
+      <span class="step-info">Шаг {{ step + 1 }} из {{ steps.length }}</span>
       <button v-if="!archiveView" class="btn secondary" :disabled="saving" @click="saveDraft">{{ saving ? 'Сохранение…' : 'Сохранить черновик' }}</button>
       <button class="btn accent" @click="onFooterNext">{{ footerLabel }}</button>
     </footer>
@@ -1495,6 +1552,10 @@ const roofElements = computed(() =>
 .step.active .num { background: var(--red-60); color: #fff; }
 .step.done .num { background: var(--neutral-100); color: #fff; }
 .step.active .label { font-weight: 700; color: var(--red-60); }
+.result-tabs { display: flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--background-primary-a-enabled); border-bottom: 1px solid var(--border-secondary-enabled); }
+.result-tabs .rt-label { font-size: 13px; font-weight: 600; color: var(--content-tertiary-enabled); margin-right: 4px; }
+.result-tabs button { padding: 7px 14px; border: 1px solid var(--border-secondary-enabled); border-radius: 999px; background: var(--background-primary-a-enabled); cursor: pointer; font-size: 13px; color: var(--content-secondary-enabled); }
+.result-tabs button.active { border-color: var(--red-60); color: var(--content-accent-enabled); background: var(--red-10); font-weight: 600; }
 .work { flex: 1; display: flex; min-height: 0; }
 .canvas-pane { flex: 1; min-width: 0; background: var(--neutral-10); display: flex; flex-direction: column; padding: 16px; position: relative; }
 .canvas-tools { position: absolute; top: 24px; right: 24px; display: flex; gap: 6px; }
