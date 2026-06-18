@@ -113,10 +113,10 @@ func buildSpec(sensorCount int, avgDistM float64) []model.SpecItem {
 		note = fmt.Sprintf("ср. расстояние %.0f м", avgDistM)
 	}
 	return []model.SpecItem{
-		{Pos: 1, Name: "Датчик снеговой нагрузки ТН-СНЕГ-200", Unit: "шт.", Qty: sensorCount, Note: "Тензометрический, IP67"},
-		{Pos: 2, Name: "Базовая станция сбора данных ТН-ХАБ-С", Unit: "шт.", Qty: 1, Note: "LoRaWAN, 4G"},
-		{Pos: 3, Name: "Щиток системы мониторинга ЩСМ-1", Unit: "шт.", Qty: 1, Note: "IP65, ввод 220 В"},
-		{Pos: 4, Name: "Корзина системы мониторинга КСМ-1", Unit: "шт.", Qty: 1, Note: "Защита оборудования"},
-		{Pos: 5, Name: "Кабель сигнальный, экранированный", Unit: "м", Qty: cable, Note: note},
+		{Pos: 1, EKN: "demo-tn-sneg-200", Name: "Датчик снеговой нагрузки ТН-СНЕГ-200", Unit: "шт.", Qty: sensorCount, Note: "Тензометрический, IP67"},
+		{Pos: 2, EKN: "demo-tn-hub-s", Name: "Базовая станция сбора данных ТН-ХАБ-С", Unit: "шт.", Qty: 1, Note: "LoRaWAN, 4G"},
+		{Pos: 3, EKN: "demo-shchsm-1", Name: "Щиток системы мониторинга ЩСМ-1", Unit: "шт.", Qty: 1, Note: "IP65, ввод 220 В"},
+		{Pos: 4, EKN: "demo-ksm-1", Name: "Корзина системы мониторинга КСМ-1", Unit: "шт.", Qty: 1, Note: "Защита оборудования"},
+		{Pos: 5, EKN: "demo-cable-signal", Name: "Кабель сигнальный, экранированный", Unit: "м", Qty: cable, Note: note},
 	}
 }

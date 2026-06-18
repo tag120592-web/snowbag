@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { createProject, deleteProject, downloadExport, listCalculations, listProjects, recalculateProject } from '@/api/client'
 import type { CalculationHistory, CalculationRunItem, ProjectListItem } from '@/types'
+import { formatRoofAreaM2 } from '@/composables/useRoofDrawing'
 
 const router = useRouter()
 const projects = ref<ProjectListItem[]>([])
@@ -99,6 +100,7 @@ async function runRecalculate(p: ProjectListItem) {
       projects.value[idx] = {
         ...projects.value[idx],
         calcNo: res.project.calcNo,
+        areaM2: res.project.areaM2 || projects.value[idx].areaM2,
         sensors: res.calculation.metrics?.sensors ?? projects.value[idx].sensors,
         status: 'Готово',
         calcs: res.history.items.length,
@@ -198,7 +200,7 @@ function runTone(run: CalculationRunItem) {
               </div>
               <span class="mono">{{ p.number }}</span>
               <span>{{ p.city }}</span>
-              <span>{{ p.areaM2 ? `${Math.round(p.areaM2).toLocaleString('ru-RU')} м²` : '—' }}</span>
+              <span>{{ formatRoofAreaM2(p.areaM2) }}</span>
               <span>{{ p.sensors || '—' }}</span>
               <span><span class="tag" :class="statusTone(p.status)">{{ p.status }}</span></span>
               <span class="chev" :class="{ rotated: expandedId === p.id }">›</span>

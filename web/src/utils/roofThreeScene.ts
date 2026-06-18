@@ -73,45 +73,14 @@ export function buildRoofScene(
 function buildBuildingShell(geometry: GeometryData, ox: number, oz: number): THREE.Group {
   const g = new THREE.Group()
   const roof = geometry.roof ?? []
-  const roofShape = toShape(roof, ox, oz)
-  const slabGeo = new THREE.ExtrudeGeometry(roofShape, { depth: 0.35, bevelEnabled: false })
-  slabGeo.rotateX(-Math.PI / 2)
-  const slab = new THREE.Mesh(
-    slabGeo,
-    new THREE.MeshLambertMaterial({ color: 0xd8dde6 }),
-  )
-  slab.position.y = ROOF_ELEVATION - 0.35
-  g.add(slab)
+  if (roof.length < 3) return g
 
+  const roofShape = toShape(roof, ox, oz)
   const topGeo = new THREE.ShapeGeometry(roofShape)
   topGeo.rotateX(-Math.PI / 2)
   const top = new THREE.Mesh(topGeo, new THREE.MeshLambertMaterial({ color: 0xeef0f4 }))
-  top.position.y = ROOF_ELEVATION + 0.01
+  top.position.y = ROOF_ELEVATION
   g.add(top)
-
-  const bounds = roofBounds(roof)
-  const wallH = metersToZ(3.2)
-  const wallMat = new THREE.MeshLambertMaterial({ color: 0xb8bec8 })
-  const w = bounds.maxX - bounds.minX
-  const d = bounds.maxY - bounds.minY
-  const cx = (bounds.minX + bounds.maxX) / 2 - ox
-  const cz = oz - (bounds.minY + bounds.maxY) / 2
-
-  const south = new THREE.Mesh(new THREE.BoxGeometry(w + 8, wallH, 0.5), wallMat)
-  south.position.set(cx, ROOF_ELEVATION - wallH / 2 - 0.1, cz + d / 2 + 4)
-  g.add(south)
-
-  const north = south.clone()
-  north.position.z = cz - d / 2 - 4
-  g.add(north)
-
-  const west = new THREE.Mesh(new THREE.BoxGeometry(0.5, wallH, d + 8), wallMat)
-  west.position.set(cx - w / 2 - 4, ROOF_ELEVATION - wallH / 2 - 0.1, cz)
-  g.add(west)
-
-  const east = west.clone()
-  east.position.x = cx + w / 2 + 4
-  g.add(east)
 
   return g
 }
@@ -136,15 +105,18 @@ function buildSnowCover(
     cols,
     rows,
   )
-  geo.rotateX(-Math.PI / 2)
 
   const pos = geo.attributes.position
   const colors: number[] = []
+  const centerX = (bounds.minX + bounds.maxX) / 2
+  const centerY = (bounds.minY + bounds.maxY) / 2
 
   for (let i = 0; i < pos.count; i += 1) {
-    const lx = pos.getX(i) + (bounds.minX + bounds.maxX) / 2
-    const ly = pos.getY(i) + (bounds.minY + bounds.maxY) / 2
-    let depthM = pointInPoly(lx, ly, roof) ? snowDepthMAt(lx, ly, bags, parapetCapM) : 0
+    // Read plan coords while geometry is still in XY (before rotateX).
+    const lx = pos.getX(i) + centerX
+    const ly = pos.getY(i) + centerY
+    const inside = pointInPoly(lx, ly, roof)
+    let depthM = inside ? snowDepthMAt(lx, ly, bags, parapetCapM) : 0
 
     for (const bag of bags ?? []) {
       const [bcx, bcy] = centroid(bag.poly)
@@ -161,13 +133,25 @@ function buildSnowCover(
     }
 
     depthM = Math.min(depthM, parapetCapM * 0.92)
-    pos.setY(i, ROOF_ELEVATION + metersToZ(depthM))
+
+    if (!inside) {
+      pos.setX(i, lx - ox)
+      pos.setY(i, oz - ly)
+      pos.setZ(i, -(ROOF_ELEVATION - 300))
+      colors.push(0, 0, 0)
+      continue
+    }
+
+    const height = ROOF_ELEVATION + metersToZ(depthM)
     pos.setX(i, lx - ox)
-    pos.setZ(i, oz - ly)
+    pos.setY(i, oz - ly)
+    pos.setZ(i, -height)
 
     const c = new THREE.Color(snowDepthColor(depthM))
     colors.push(c.r, c.g, c.b)
   }
+
+  geo.rotateX(-Math.PI / 2)
 
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
   geo.computeVertexNormals()

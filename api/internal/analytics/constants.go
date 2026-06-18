@@ -17,4 +17,7 @@ const (
 	leeDepthPerHeightM = 3.0
 	leeMinDepthM       = 6.0
 	leeMaxDepthM       = 10.0
+
+	// Canvas pixels per meter (matches web plan viewBox scale).
+	canvasPxPerM = 6.6
 )
