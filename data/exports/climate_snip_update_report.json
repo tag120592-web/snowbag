@@ -1,312 +1,50 @@
 {
-  "norm": "СНиП 2.01.01-82",
-  "month": "january",
-  "monthLabel": "январь",
-  "source": "Приложение 4, повторяемость направлений ветра за январь (актуализировано из https://stroydocs.com/info/e_veter)",
-  "windRosesByRegion": {
-    "I": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 19
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 9
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 7
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 6
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 22
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 11
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 15
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 11
-      }
-    ],
-    "II": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 8
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 7
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 9
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 11
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 13
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 19
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 21
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 12
-      }
-    ],
-    "III": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 10
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 8
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 8
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 10
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 12
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 15
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 18
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 11
-      }
-    ],
-    "IV": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 12
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 10
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 9
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 8
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 18
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 14
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 16
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 13
-      }
-    ],
-    "V": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 14
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 11
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 10
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 9
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 16
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 13
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 14
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 13
-      }
-    ],
-    "VI": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 15
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 12
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 11
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 10
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 14
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 12
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 13
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 13
-      }
-    ],
-    "VII": [
-      {
-        "dir": "С",
-        "deg": 0,
-        "v": 18
-      },
-      {
-        "dir": "СВ",
-        "deg": 45,
-        "v": 14
-      },
-      {
-        "dir": "В",
-        "deg": 90,
-        "v": 12
-      },
-      {
-        "dir": "ЮВ",
-        "deg": 135,
-        "v": 9
-      },
-      {
-        "dir": "Ю",
-        "deg": 180,
-        "v": 10
-      },
-      {
-        "dir": "ЮЗ",
-        "deg": 225,
-        "v": 8
-      },
-      {
-        "dir": "З",
-        "deg": 270,
-        "v": 11
-      },
-      {
-        "dir": "СЗ",
-        "deg": 315,
-        "v": 18
-      }
-    ]
-  },
-  "settlements": [
+  "source": "https://stroydocs.com/info/e_veter",
+  "api": "http://stroydocs.com/info/getVeterByAjax",
+  "stroydocsRows": 652,
+  "settlementsTotal": 106,
+  "updatedCount": 85,
+  "unchangedCount": 0,
+  "missing": [
+    "Тольятти",
+    "Ульяновск",
+    "Новокузнецк",
+    "Чебоксары",
+    "Нижневартовск",
+    "Ноябрьск",
+    "Норильск",
+    "Набережные Челны",
+    "Стерлитамак",
+    "Курган",
+    "Черкесск",
+    "Прокопьевск",
+    "Дзержинск",
+    "Северодвинск",
+    "Березники",
+    "Копейск",
+    "Миасс",
+    "Златоуст",
+    "Нижнекамск",
+    "Альметьевск",
+    "Балашова"
+  ],
+  "ambiguous": [
     {
-      "name": "Москва",
-      "aliases": [
-        "г. Москва"
-      ],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Омск",
+      "pickedRegion": "Омская область",
+      "stroydocsCity": "Омск",
+      "regions": [
+        "Магаданская область",
+        "Омская область"
+      ]
+    }
+  ],
+  "updated": [
+    {
+      "settlement": "Москва",
+      "stroydocsCity": "Москва",
+      "region": "Московская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -351,14 +89,10 @@
       ]
     },
     {
-      "name": "Санкт-Петербург",
-      "aliases": [
-        "СПб",
-        "Петербург",
-        "Ленинград"
-      ],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Санкт-Петербург",
+      "stroydocsCity": "Санкт-Петербург",
+      "region": "Ленинградская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -403,12 +137,10 @@
       ]
     },
     {
-      "name": "Екатеринбург",
-      "aliases": [
-        "Свердловск"
-      ],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Екатеринбург",
+      "stroydocsCity": "Свердловск",
+      "region": "Свердловская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -453,10 +185,10 @@
       ]
     },
     {
-      "name": "Новосибирск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Новосибирск",
+      "stroydocsCity": "Новосибирск",
+      "region": "Новосибирская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -501,10 +233,10 @@
       ]
     },
     {
-      "name": "Казань",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "III",
+      "settlement": "Казань",
+      "stroydocsCity": "Казань",
+      "region": "Татарская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -549,12 +281,10 @@
       ]
     },
     {
-      "name": "Нижний Новгород",
-      "aliases": [
-        "Горький"
-      ],
-      "snowRegion": "IV",
-      "windRegion": "II",
+      "settlement": "Нижний Новгород",
+      "stroydocsCity": "Горький",
+      "region": "Горьковская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -599,10 +329,10 @@
       ]
     },
     {
-      "name": "Челябинск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Челябинск",
+      "stroydocsCity": "Челябинск",
+      "region": "Челябинская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -647,12 +377,10 @@
       ]
     },
     {
-      "name": "Самара",
-      "aliases": [
-        "Куйбышев"
-      ],
-      "snowRegion": "IV",
-      "windRegion": "III",
+      "settlement": "Самара",
+      "stroydocsCity": "Куйбышев",
+      "region": "Куйбышевская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -697,10 +425,10 @@
       ]
     },
     {
-      "name": "Омск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Омск",
+      "stroydocsCity": "Омск",
+      "region": "Омская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -745,10 +473,10 @@
       ]
     },
     {
-      "name": "Ростов-на-Дону",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Ростов-на-Дону",
+      "stroydocsCity": "Ростов-на-Дону",
+      "region": "Ростовская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -793,10 +521,10 @@
       ]
     },
     {
-      "name": "Уфа",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "II",
+      "settlement": "Уфа",
+      "stroydocsCity": "Уфа",
+      "region": "Башкирская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -841,10 +569,10 @@
       ]
     },
     {
-      "name": "Красноярск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Красноярск",
+      "stroydocsCity": "Красноярск",
+      "region": "Красноярский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -889,10 +617,10 @@
       ]
     },
     {
-      "name": "Воронеж",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Воронеж",
+      "stroydocsCity": "Воронеж",
+      "region": "Воронежская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -937,10 +665,10 @@
       ]
     },
     {
-      "name": "Пермь",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "II",
+      "settlement": "Пермь",
+      "stroydocsCity": "Пермь",
+      "region": "Пермская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -985,12 +713,10 @@
       ]
     },
     {
-      "name": "Волгоград",
-      "aliases": [
-        "Сталинград"
-      ],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Волгоград",
+      "stroydocsCity": "Волгоград",
+      "region": "Волгоградская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1035,10 +761,10 @@
       ]
     },
     {
-      "name": "Краснодар",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Краснодар",
+      "stroydocsCity": "Краснодар",
+      "region": "Краснодарский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1083,10 +809,10 @@
       ]
     },
     {
-      "name": "Саратов",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "III",
+      "settlement": "Саратов",
+      "stroydocsCity": "Саратов",
+      "region": "Саратовская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1131,10 +857,10 @@
       ]
     },
     {
-      "name": "Тюмень",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Тюмень",
+      "stroydocsCity": "Гюмень",
+      "region": "Тюменская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1179,58 +905,10 @@
       ]
     },
     {
-      "name": "Тольятти",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "III",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 10
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 8
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 8
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 10
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 12
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 15
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 18
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 11
-        }
-      ]
-    },
-    {
-      "name": "Ижевск",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "II",
+      "settlement": "Ижевск",
+      "stroydocsCity": "Ижевск",
+      "region": "Удмуртская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1275,10 +953,10 @@
       ]
     },
     {
-      "name": "Барнаул",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Барнаул",
+      "stroydocsCity": "Барнаул",
+      "region": "Алтайский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1323,58 +1001,10 @@
       ]
     },
     {
-      "name": "Ульяновск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Иркутск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Иркутск",
+      "stroydocsCity": "Иркутск",
+      "region": "Иркутская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1419,10 +1049,10 @@
       ]
     },
     {
-      "name": "Хабаровск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "VII",
+      "settlement": "Хабаровск",
+      "stroydocsCity": "Хабаровск",
+      "region": "Хаборавский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1467,10 +1097,10 @@
       ]
     },
     {
-      "name": "Ярославль",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Ярославль",
+      "stroydocsCity": "Ярославль",
+      "region": "Ярославская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1515,10 +1145,10 @@
       ]
     },
     {
-      "name": "Владивосток",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "VII",
+      "settlement": "Владивосток",
+      "stroydocsCity": "Владивосток",
+      "region": "Приморский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1563,10 +1193,10 @@
       ]
     },
     {
-      "name": "Махачкала",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "IV",
+      "settlement": "Махачкала",
+      "stroydocsCity": "Махачкала",
+      "region": "Дагестанская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1611,10 +1241,10 @@
       ]
     },
     {
-      "name": "Томск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Томск",
+      "stroydocsCity": "Томск",
+      "region": "Томская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1659,10 +1289,10 @@
       ]
     },
     {
-      "name": "Оренбург",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Оренбург",
+      "stroydocsCity": "Оренбург",
+      "region": "Оренбургская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1707,10 +1337,10 @@
       ]
     },
     {
-      "name": "Кемерово",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "III",
+      "settlement": "Кемерово",
+      "stroydocsCity": "Кемерово",
+      "region": "Кемеровская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1755,58 +1385,10 @@
       ]
     },
     {
-      "name": "Новокузнецк",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "III",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 10
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 8
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 8
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 10
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 12
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 15
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 18
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 11
-        }
-      ]
-    },
-    {
-      "name": "Рязань",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Рязань",
+      "stroydocsCity": "Рязань",
+      "region": "Рязанская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1851,10 +1433,10 @@
       ]
     },
     {
-      "name": "Астрахань",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "IV",
+      "settlement": "Астрахань",
+      "stroydocsCity": "Астрахань",
+      "region": "Астраханская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1899,10 +1481,10 @@
       ]
     },
     {
-      "name": "Пенза",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
+      "settlement": "Пенза",
+      "stroydocsCity": "Пенза",
+      "region": "Пензенская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1947,10 +1529,10 @@
       ]
     },
     {
-      "name": "Липецк",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Липецк",
+      "stroydocsCity": "Липецк",
+      "region": "Липецкая область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -1995,10 +1577,10 @@
       ]
     },
     {
-      "name": "Тула",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Тула",
+      "stroydocsCity": "Тула",
+      "region": "Тульская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2043,10 +1625,10 @@
       ]
     },
     {
-      "name": "Киров",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "II",
+      "settlement": "Киров",
+      "stroydocsCity": "Киров",
+      "region": "Кировская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2091,58 +1673,10 @@
       ]
     },
     {
-      "name": "Чебоксары",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Калининград",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "I",
+      "settlement": "Калининград",
+      "stroydocsCity": "Калининград",
+      "region": "Калининградская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2187,10 +1721,10 @@
       ]
     },
     {
-      "name": "Брянск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Брянск",
+      "stroydocsCity": "Брянск",
+      "region": "Брянская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2235,10 +1769,10 @@
       ]
     },
     {
-      "name": "Курск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Курск",
+      "stroydocsCity": "Курск",
+      "region": "Курская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2283,10 +1817,10 @@
       ]
     },
     {
-      "name": "Магнитогорск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Магнитогорск",
+      "stroydocsCity": "Магнитогорск",
+      "region": "Челябинская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2331,10 +1865,10 @@
       ]
     },
     {
-      "name": "Тверь",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Тверь",
+      "stroydocsCity": "Калинин",
+      "region": "Калининская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2379,10 +1913,10 @@
       ]
     },
     {
-      "name": "Ставрополь",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Ставрополь",
+      "stroydocsCity": "Ставрополь",
+      "region": "Ставропольский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2427,10 +1961,10 @@
       ]
     },
     {
-      "name": "Иваново",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Иваново",
+      "stroydocsCity": "Иваново",
+      "region": "Ивановская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2475,10 +2009,10 @@
       ]
     },
     {
-      "name": "Белгород",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Белгород",
+      "stroydocsCity": "Белгород",
+      "region": "Белгородская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2523,10 +2057,10 @@
       ]
     },
     {
-      "name": "Сочи",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "IV",
+      "settlement": "Сочи",
+      "stroydocsCity": "Сочи",
+      "region": "Краснодарский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2571,10 +2105,10 @@
       ]
     },
     {
-      "name": "Мурманск",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "I",
+      "settlement": "Мурманск",
+      "stroydocsCity": "Мурманск",
+      "region": "Мурманская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2619,10 +2153,10 @@
       ]
     },
     {
-      "name": "Владикавказ",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "IV",
+      "settlement": "Владикавказ",
+      "stroydocsCity": "Орджоникидзе",
+      "region": "Северо-Осетинская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2667,10 +2201,10 @@
       ]
     },
     {
-      "name": "Грозный",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "IV",
+      "settlement": "Грозный",
+      "stroydocsCity": "Грозный",
+      "region": "Чечено-Ингушская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2715,10 +2249,10 @@
       ]
     },
     {
-      "name": "Смоленск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Смоленск",
+      "stroydocsCity": "Смоленск",
+      "region": "Смоленская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2763,10 +2297,10 @@
       ]
     },
     {
-      "name": "Владимир",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Владимир",
+      "stroydocsCity": "Владимир",
+      "region": "Владимирская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2811,10 +2345,10 @@
       ]
     },
     {
-      "name": "Калуга",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Калуга",
+      "stroydocsCity": "Калуга",
+      "region": "Калужская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2859,10 +2393,10 @@
       ]
     },
     {
-      "name": "Орёл",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Орёл",
+      "stroydocsCity": "Орел",
+      "region": "Орловская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2907,10 +2441,10 @@
       ]
     },
     {
-      "name": "Тамбов",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Тамбов",
+      "stroydocsCity": "Тамбов",
+      "region": "Тамбовская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -2955,10 +2489,10 @@
       ]
     },
     {
-      "name": "Кострома",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Кострома",
+      "stroydocsCity": "Кострома",
+      "region": "Костромская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3003,10 +2537,10 @@
       ]
     },
     {
-      "name": "Сургут",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Сургут",
+      "stroydocsCity": "Сургут",
+      "region": "Тюменская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3051,154 +2585,10 @@
       ]
     },
     {
-      "name": "Нижневартовск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Ноябрьск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Норильск",
-      "aliases": [],
-      "snowRegion": "VI",
-      "windRegion": "IV",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 12
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 10
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 8
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 18
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 14
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 16
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 13
-        }
-      ]
-    },
-    {
-      "name": "Якутск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "IV",
+      "settlement": "Якутск",
+      "stroydocsCity": "Якутск",
+      "region": "Якутская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3243,10 +2633,10 @@
       ]
     },
     {
-      "name": "Чита",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Чита",
+      "stroydocsCity": "Чита",
+      "region": "Читинская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3291,10 +2681,10 @@
       ]
     },
     {
-      "name": "Улан-Удэ",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Улан-Удэ",
+      "stroydocsCity": "Улан-Удэ",
+      "region": "Бурятская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3339,10 +2729,10 @@
       ]
     },
     {
-      "name": "Комсомольск-на-Амуре",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "VI",
+      "settlement": "Комсомольск-на-Амуре",
+      "stroydocsCity": "Комсомольск-на-Амуре",
+      "region": "Хаборавский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3387,10 +2777,10 @@
       ]
     },
     {
-      "name": "Благовещенск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Благовещенск",
+      "stroydocsCity": "Благовещенск",
+      "region": "Амурская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3435,10 +2825,10 @@
       ]
     },
     {
-      "name": "Петропавловск-Камчатский",
-      "aliases": [],
-      "snowRegion": "VII",
-      "windRegion": "VI",
+      "settlement": "Петропавловск-Камчатский",
+      "stroydocsCity": "Петропавловск-Камчатский",
+      "region": "Камчатская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3483,10 +2873,10 @@
       ]
     },
     {
-      "name": "Южно-Сахалинск",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "VI",
+      "settlement": "Южно-Сахалинск",
+      "stroydocsCity": "Южно-Сахалинск",
+      "region": "Сахалинская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3531,10 +2921,10 @@
       ]
     },
     {
-      "name": "Сыктывкар",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "I",
+      "settlement": "Сыктывкар",
+      "stroydocsCity": "Сыктывкар",
+      "region": "Коми АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3579,10 +2969,10 @@
       ]
     },
     {
-      "name": "Архангельск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "I",
+      "settlement": "Архангельск",
+      "stroydocsCity": "Архангельск",
+      "region": "Архангельская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3627,10 +3017,10 @@
       ]
     },
     {
-      "name": "Вологда",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "I",
+      "settlement": "Вологда",
+      "stroydocsCity": "Вологда",
+      "region": "Вологодская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3675,10 +3065,10 @@
       ]
     },
     {
-      "name": "Псков",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Псков",
+      "stroydocsCity": "Псков",
+      "region": "Псковская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3723,10 +3113,10 @@
       ]
     },
     {
-      "name": "Великий Новгород",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "I",
+      "settlement": "Великий Новгород",
+      "stroydocsCity": "Новгород",
+      "region": "Новгородская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3771,106 +3161,10 @@
       ]
     },
     {
-      "name": "Набережные Челны",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Стерлитамак",
-      "aliases": [],
-      "snowRegion": "V",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Орск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Орск",
+      "stroydocsCity": "Орск",
+      "region": "Оренбургская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3915,10 +3209,10 @@
       ]
     },
     {
-      "name": "Нижний Тагил",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Нижний Тагил",
+      "stroydocsCity": "Нижний Тагил",
+      "region": "Свердловская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -3963,58 +3257,10 @@
       ]
     },
     {
-      "name": "Курган",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Анадырь",
-      "aliases": [],
-      "snowRegion": "VII",
-      "windRegion": "VII",
+      "settlement": "Анадырь",
+      "stroydocsCity": "Анадырь",
+      "region": "Магаданская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4059,10 +3305,10 @@
       ]
     },
     {
-      "name": "Магадан",
-      "aliases": [],
-      "snowRegion": "VI",
-      "windRegion": "VI",
+      "settlement": "Магадан",
+      "stroydocsCity": "Нагаева, бухта",
+      "region": "Магаданская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4107,10 +3353,10 @@
       ]
     },
     {
-      "name": "Элиста",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Элиста",
+      "stroydocsCity": "Элиста",
+      "region": "Калмыцкая АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4155,10 +3401,10 @@
       ]
     },
     {
-      "name": "Абакан",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Абакан",
+      "stroydocsCity": "Абакан",
+      "region": "Красноярский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4203,10 +3449,10 @@
       ]
     },
     {
-      "name": "Горно-Алтайск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Горно-Алтайск",
+      "stroydocsCity": "Горно-Алтайск",
+      "region": "Алтайский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4251,10 +3497,10 @@
       ]
     },
     {
-      "name": "Кызыл",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Кызыл",
+      "stroydocsCity": "Кызыл",
+      "region": "Тувинская АГСР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4299,10 +3545,10 @@
       ]
     },
     {
-      "name": "Нальчик",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "IV",
+      "settlement": "Нальчик",
+      "stroydocsCity": "Нальчик",
+      "region": "Кабардино-Балкарская АССР",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4347,58 +3593,10 @@
       ]
     },
     {
-      "name": "Черкесск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "IV",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 12
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 10
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 8
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 18
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 14
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 16
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 13
-        }
-      ]
-    },
-    {
-      "name": "Майкоп",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Майкоп",
+      "stroydocsCity": "Майкоп",
+      "region": "Краснодарский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4443,10 +3641,10 @@
       ]
     },
     {
-      "name": "Симферополь",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Симферополь",
+      "stroydocsCity": "Симферополь",
+      "region": "Крымская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4491,10 +3689,10 @@
       ]
     },
     {
-      "name": "Севастополь",
-      "aliases": [],
-      "snowRegion": "II",
-      "windRegion": "III",
+      "settlement": "Севастополь",
+      "stroydocsCity": "Севастополь",
+      "region": "Крымская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4539,10 +3737,10 @@
       ]
     },
     {
-      "name": "Каменск-Шахтинск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
+      "settlement": "Каменск-Шахтинск",
+      "stroydocsCity": "Каменск-Шахтинский",
+      "region": "Ростовская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4587,10 +3785,10 @@
       ]
     },
     {
-      "name": "Новороссийск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Новороссийск",
+      "stroydocsCity": "Новороссийск",
+      "region": "Краснодарский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4635,10 +3833,10 @@
       ]
     },
     {
-      "name": "Бийск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Бийск",
+      "stroydocsCity": "Бийск",
+      "region": "Алтайский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4683,154 +3881,10 @@
       ]
     },
     {
-      "name": "Прокопьевск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 10
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 8
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 8
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 10
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 12
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 15
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 18
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 11
-        }
-      ]
-    },
-    {
-      "name": "Дзержинск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 10
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 8
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 8
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 10
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 12
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 15
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 18
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 11
-        }
-      ]
-    },
-    {
-      "name": "Северодвинск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Армавир",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Армавир",
+      "stroydocsCity": "Армавир",
+      "region": "Краснодарский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4875,10 +3929,10 @@
       ]
     },
     {
-      "name": "Уссурийск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Уссурийск",
+      "stroydocsCity": "Уссурийск",
+      "region": "Приморский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4923,10 +3977,10 @@
       ]
     },
     {
-      "name": "Находка",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "III",
+      "settlement": "Находка",
+      "stroydocsCity": "Находка, бухта",
+      "region": "Приморский край",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -4971,58 +4025,10 @@
       ]
     },
     {
-      "name": "Березники",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Салехард",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Салехард",
+      "stroydocsCity": "Салехард",
+      "region": "Тюменская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -5067,154 +4073,10 @@
       ]
     },
     {
-      "name": "Копейск",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Миасс",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Златоуст",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Камышин",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
+      "settlement": "Камышин",
+      "stroydocsCity": "Камышин",
+      "region": "Волгоградская область",
+      "match": "exact",
       "januaryRose": [
         {
           "dir": "С",
@@ -5255,150 +4117,6 @@
           "dir": "СЗ",
           "deg": 315,
           "v": 21
-        }
-      ]
-    },
-    {
-      "name": "Нижнекамск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Альметьевск",
-      "aliases": [],
-      "snowRegion": "IV",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
-        }
-      ]
-    },
-    {
-      "name": "Балашова",
-      "aliases": [],
-      "snowRegion": "III",
-      "windRegion": "II",
-      "januaryRose": [
-        {
-          "dir": "С",
-          "deg": 0,
-          "v": 8
-        },
-        {
-          "dir": "СВ",
-          "deg": 45,
-          "v": 7
-        },
-        {
-          "dir": "В",
-          "deg": 90,
-          "v": 9
-        },
-        {
-          "dir": "ЮВ",
-          "deg": 135,
-          "v": 11
-        },
-        {
-          "dir": "Ю",
-          "deg": 180,
-          "v": 13
-        },
-        {
-          "dir": "ЮЗ",
-          "deg": 225,
-          "v": 19
-        },
-        {
-          "dir": "З",
-          "deg": 270,
-          "v": 21
-        },
-        {
-          "dir": "СЗ",
-          "deg": 315,
-          "v": 12
         }
       ]
     }

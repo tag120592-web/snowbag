@@ -11,11 +11,16 @@ const props = defineProps<{
   city?: string
   /** Initial zoom level (restored between wizard steps). */
   zoom?: number | null
+  /** Map center restored between wizard steps (may differ from placemark coords after pan). */
+  center?: [number, number] | null
   /** When false, map is view-only (for geometry tracing overlay). */
   interactive?: boolean
+  /** When false with interactive, pan/zoom work but map click does not move the pin. */
+  allowClick?: boolean
 }>()
 
 const interactive = computed(() => props.interactive !== false)
+const allowClick = computed(() => props.allowClick !== false)
 
 const emit = defineEmits<{
   select: [payload: MapSelectPayload]
@@ -65,6 +70,7 @@ function normalizeCity(city: string) {
 }
 
 function defaultCenter(): [number, number] {
+  if (props.center) return props.center
   if (props.lat != null && props.lon != null) return [props.lat, props.lon]
   const cityKey = normalizeCity(props.city ?? '')
   return CITY_COORDS[cityKey] ?? [56.8389, 60.6057]
@@ -134,10 +140,27 @@ function setPlacemark(lat: number, lon: number) {
   map.geoObjects.add(placemark)
 }
 
+function setMapInteractivity(enabled: boolean) {
+  if (!map) return
+  const behaviors = ['scrollZoom', 'drag', 'dblClickZoom', 'multiTouch'] as const
+  for (const b of behaviors) {
+    if (enabled) map.behaviors.enable(b)
+    else map.behaviors.disable(b)
+  }
+}
+
 function bindViewportEvents() {
   if (!map || viewportListener) return
   viewportListener = () => emitViewport()
   map.events.add('boundschange', viewportListener)
+}
+
+function applyViewportFromProps() {
+  if (!map) return
+  const center = defaultCenter()
+  const zoom = props.zoom ?? map.getZoom()
+  map.setCenter(center, zoom, { duration: 0 })
+  if (props.lat != null && props.lon != null) setPlacemark(props.lat, props.lon)
 }
 
 async function initMap() {
@@ -166,16 +189,11 @@ async function initMap() {
     map.behaviors.enable('drag')
     map.behaviors.enable('dblClickZoom')
     map.behaviors.enable('multiTouch')
-    if (!interactive.value) {
-      map.behaviors.disable('scrollZoom')
-      map.behaviors.disable('drag')
-      map.behaviors.disable('dblClickZoom')
-      map.behaviors.disable('multiTouch')
-    }
+    setMapInteractivity(interactive.value)
     if (props.lat != null && props.lon != null) {
       setPlacemark(props.lat, props.lon)
     }
-    if (interactive.value) {
+    if (interactive.value && allowClick.value) {
       map.events.add('click', (event: { get: (key: string) => number[] }) => {
         const coords = event.get('coords')
         const lat = coords[0]
@@ -215,19 +233,17 @@ async function geocode(query: string) {
   }
 }
 
-function onWheel(e: WheelEvent) {
-  e.stopPropagation()
-}
-
 watch(
-  () => [props.lat, props.lon, props.zoom] as const,
-  ([lat, lon, zoom]) => {
-    if (map && lat != null && lon != null) {
-      map.setCenter([lat, lon], zoom ?? map.getZoom())
-      setPlacemark(lat, lon)
-    }
+  () => [props.center, props.zoom, props.lat, props.lon] as const,
+  () => {
+    if (!map) return
+    applyViewportFromProps()
   },
 )
+
+watch(interactive, (enabled) => {
+  setMapInteractivity(enabled)
+})
 
 onMounted(() => { void initMap() })
 
@@ -246,7 +262,7 @@ defineExpose({ geocode })
 </script>
 
 <template>
-  <div class="map-wrap" @wheel="onWheel">
+  <div class="map-wrap">
     <div ref="mapEl" class="map-root" tabindex="0" />
     <div v-if="loadError" class="map-error">
       <p>{{ loadError }}</p>
@@ -265,6 +281,7 @@ defineExpose({ geocode })
   overflow: hidden;
   border: 1px solid var(--border-secondary-enabled);
   min-height: 360px;
+  touch-action: none;
 }
 .map-root { width: 100%; height: 100%; min-height: 360px; outline: none; }
 .map-error {

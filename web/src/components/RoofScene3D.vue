@@ -59,9 +59,9 @@ function init() {
   if (!el) return
 
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0xebedf0)
+  scene.background = new THREE.Color(0xdce3ef)
 
-  camera = new THREE.PerspectiveCamera(45, 1, 1, 100000)
+  camera = new THREE.PerspectiveCamera(42, 1, 1, 100000)
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.domElement.className = 'canvas'
@@ -71,7 +71,7 @@ function init() {
   controls.enableDamping = true
   controls.dampingFactor = 0.08
   controls.minDistance = 50
-  controls.maxPolarAngle = Math.PI * 0.48
+  controls.maxPolarAngle = Math.PI * 0.52
 
   const ambient = new THREE.AmbientLight(0xffffff, 0.65)
   const sun = new THREE.DirectionalLight(0xffffff, 0.85)
@@ -127,8 +127,15 @@ watch(
 <template>
   <div ref="containerRef" class="scene3d">
     <div class="overlay">
-      <p class="title">3D · Three.js</p>
-      <p class="hint">Перетащите для вращения · колёсико для масштаба</p>
+      <p class="title">Распределение толщины снегового покрова</p>
+      <ul class="legend">
+        <li><span class="swatch" style="background:#7ec8e8" />0–10 см</li>
+        <li><span class="swatch" style="background:#6ecf8f" />10–20 см</li>
+        <li><span class="swatch" style="background:#f5d547" />20–30 см</li>
+        <li><span class="swatch" style="background:#f5a623" />30–50 см</li>
+        <li><span class="swatch" style="background:#e11b11" />&gt;50 см</li>
+      </ul>
+      <p class="hint">Сугробы не выше парапета · перетащите для вращения</p>
     </div>
   </div>
 </template>
@@ -153,18 +160,46 @@ watch(
   left: 16px;
   pointer-events: none;
   z-index: 1;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-small);
+  max-width: 220px;
 }
 
 .title {
   margin: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--content-tertiary-enabled);
+  color: var(--content-primary-a-enabled);
+}
+
+.legend {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--content-secondary-enabled);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .hint {
-  margin: 4px 0 0;
-  font-size: 11px;
+  margin: 8px 0 0;
+  font-size: 10px;
   color: var(--content-tertiary-enabled);
 }
 </style>

@@ -38,6 +38,7 @@ const props = defineProps<{
   mapLat?: number | null
   mapLon?: number | null
   mapZoom?: number | null
+  mapCenter?: [number, number] | null
   mapCity?: string
   mapSelected: boolean
   underlaySrc: string
@@ -336,16 +337,19 @@ function onImageError() {
       </template>
 
       <template v-else>
-        <YandexMapPane
-          ref="mapPaneRef"
-          :address="mapAddress"
-          :lat="mapLat"
-          :lon="mapLon"
-          :zoom="mapZoom"
-          :city="mapCity"
-          @select="onMapSelect"
-          @viewport-change="emit('mapViewportChange', $event)"
-        />
+        <div class="viewport map-viewport">
+          <YandexMapPane
+            ref="mapPaneRef"
+            :address="mapAddress"
+            :lat="mapLat"
+            :lon="mapLon"
+            :zoom="mapZoom"
+            :center="mapCenter"
+            :city="mapCity"
+            @select="onMapSelect"
+            @viewport-change="emit('mapViewportChange', $event)"
+          />
+        </div>
       </template>
     </div>
 
@@ -507,6 +511,8 @@ function onImageError() {
   border-radius: 8px; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 .viewport { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
+.map-viewport { padding: 0; align-items: stretch; }
+.map-viewport :deep(.map-wrap) { margin: 0; min-height: 100%; height: 100%; }
 .preview {
   background: #fff; border: 1px solid var(--border-secondary-enabled); box-shadow: var(--shadow-small);
   border-radius: 4px; padding: 18px; transition: transform .25s; max-width: 100%;
