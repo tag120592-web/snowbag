@@ -80,8 +80,8 @@ const footerLabel = computed(() => (step.value === 1 ? 'Рассчитать' : 
   <div class="app">
     <header class="phead">
       <button class="brand" @click="router.push('/')">
-        <div class="logo">TN</div>
-        <div class="brand-text"><span class="b1">Расчёты кровли</span><span class="b2">Платформа инженерных расчётов ТН</span></div>
+        <img class="logo" src="/app-icon.png" alt="Формула расчета" width="34" height="34" />
+        <div class="brand-text"><span class="b1">Формула расчета</span><span class="b2">Вычислительный комплекс</span></div>
       </button>
       <template v-if="selectedProject && phase === 'wizard'">
         <div class="vline" />
@@ -156,7 +156,7 @@ const footerLabel = computed(() => (step.value === 1 ? 'Рассчитать' : 
 .app { display: flex; flex-direction: column; height: 100vh; width: 100vw; overflow: hidden; background: var(--neutral-10); }
 .phead { height: 64px; flex: 0 0 64px; display: flex; align-items: center; gap: 16px; padding: 0 24px; background: var(--background-primary-a-enabled); border-bottom: 1px solid var(--border-secondary-enabled); }
 .brand { display: flex; align-items: center; gap: 12px; border: none; background: none; cursor: pointer; padding: 0; }
-.logo { width: 34px; height: 34px; border-radius: 8px; background: var(--red-60); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.logo { width: 34px; height: 34px; border-radius: 8px; object-fit: contain; flex-shrink: 0; }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
 .b1 { font-size: 15px; font-weight: 700; color: var(--content-primary-a-enabled); }
 .b2 { font-size: 11px; color: var(--content-tertiary-enabled); }

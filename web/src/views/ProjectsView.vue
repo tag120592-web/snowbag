@@ -165,7 +165,7 @@ function runTone(run: CalculationRunItem) {
         <div class="head">
           <div>
             <h1>Проекты</h1>
-            <p>Проектирование систем мониторинга снеговой нагрузки на плоских кровлях</p>
+            <p>Проектирование систем вычислительного комплекса на плоских кровлях</p>
           </div>
           <div class="head-actions">
             <input v-model="search" class="search" placeholder="Поиск по объектам" />

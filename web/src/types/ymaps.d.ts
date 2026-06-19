@@ -16,6 +16,9 @@ interface YMap {
   geoObjects: { add: (obj: unknown) => void; remove: (obj: unknown) => void }
   container: { fitToViewport: () => void }
   setCenter: (center: number[], zoom?: number, options?: Record<string, unknown>) => void
+  setZoom: (zoom: number, options?: Record<string, unknown>) => void
+  getGlobalPixelCenter: () => number[]
+  setGlobalPixelCenter: (globalPixelCenter: number[], zoom?: number) => void
   getCenter: () => number[]
   getZoom: () => number
   setType: (type: string) => void

@@ -1,7 +1,7 @@
 {
   "$schema": "https://likec4.dev/schemas/config.json",
   "name": "snowbag",
-  "title": "Снеговые мешки — архитектура",
+  "title": "Формула расчета — архитектура",
   "include": {
     "paths": ["."]
   }

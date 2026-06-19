@@ -9,10 +9,10 @@ const emit = defineEmits<{ home: [] }>()
 <template>
   <header class="header">
     <button type="button" class="brand" @click="emit('home')">
-      <div class="logo">TN</div>
+      <img class="logo" src="/app-icon.png" alt="Формула расчета" width="34" height="34" />
       <div class="brand-text">
-        <span class="title">Снеговые мешки</span>
-        <span class="subtitle">Мониторинг снеговой нагрузки</span>
+        <span class="title">Формула расчета</span>
+        <span class="subtitle">Вычислительный комплекс</span>
       </div>
     </button>
 
@@ -62,13 +62,8 @@ const emit = defineEmits<{ home: [] }>()
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: var(--red-60);
-  color: #fff;
-  font-weight: 800;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
 .title { font-size: 15px; font-weight: 700; }

@@ -205,6 +205,15 @@ watch(pdfSelectedPage, () => {
   if (isPdfPicking.value) void renderPickPreview()
 })
 
+watch(tab, (value) => {
+  if (value !== 'map') return
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      mapPaneRef.value?.relayout()
+    })
+  })
+})
+
 watch(
   () => [props.underlaySrc, isPdfPreview.value, isPdfPicking.value, displayPage.value] as const,
   ([src, isPdf, picking]) => {
@@ -346,6 +355,7 @@ function onImageError() {
             :zoom="mapZoom"
             :center="mapCenter"
             :city="mapCity"
+            :viewport-sync="false"
             @select="onMapSelect"
             @viewport-change="emit('mapViewportChange', $event)"
           />
@@ -486,7 +496,7 @@ function onImageError() {
 
 <style scoped>
 .upload-layout { flex: 1; display: flex; min-height: 0; }
-.upload-main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--neutral-10); }
+.upload-main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--neutral-10); }
 .tabs { display: flex; gap: 2px; padding: 12px 20px 0; }
 .tab {
   padding: 8px 16px; border: none; border-radius: var(--radius-md) var(--radius-md) 0 0;
@@ -510,9 +520,9 @@ function onImageError() {
   height: 32px; padding: 0 12px; border: 1px solid var(--border-secondary-enabled);
   border-radius: 8px; background: #fff; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.viewport { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; }
-.map-viewport { padding: 0; align-items: stretch; }
-.map-viewport :deep(.map-wrap) { margin: 0; min-height: 100%; height: 100%; }
+.viewport { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; min-height: 0; }
+.map-viewport { padding: 0; align-items: stretch; flex-direction: column; width: 100%; height: 100%; }
+.map-viewport :deep(.map-wrap) { margin: 0; flex: 1; min-height: 360px; width: 100%; height: 100%; }
 .preview {
   background: #fff; border: 1px solid var(--border-secondary-enabled); box-shadow: var(--shadow-small);
   border-radius: 4px; padding: 18px; transition: transform .25s; max-width: 100%;

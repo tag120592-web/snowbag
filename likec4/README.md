@@ -1,4 +1,4 @@
-# Архитектура «Снеговые мешки» (LikeC4)
+# Архитектура «Формула расчета» (LikeC4)
 
 Модель архитектуры SaaS по [техническому заданию](../Техническое_задание_снеговых_мешков.docx) в формате [LikeC4](https://likec4.dev/).
 
@@ -7,8 +7,8 @@
 | View | Уровень C4 | Описание |
 |------|------------|----------|
 | `index` | C1 | Контекст: пользователи и внешние системы |
-| `contextFull` | C1 | Контекст с post-MVP (CRM, владелец здания) |
-| `containers` | C2 | Frontend, API, Worker, БД, Redis, S3 |
+| `contextFull` | C1 | Контекст с post-MVP (владелец здания) |
+| `containers` | C2 | Frontend (Vue 3 + Three.js), API, Worker, БД, Redis, S3, ПИМ |
 | `backend` | C3 | Компоненты Go API |
 | `frontend` | C3 | Компоненты Vue 3 |
 | `worker` | C3 | Пайплайн обработки чертежей |
@@ -57,7 +57,8 @@ npx likec4 export png -o ./diagrams
 | Аналитика снеговых мешков | `analyticsEngine` |
 | PostgreSQL + PostGIS | `snowbag.postgis` |
 | S3 (MinIO / Yandex) | `snowbag.objectStorage` |
-| SSO | `auth` → `corporateSSO` |
+| ПИМ (QRC API) | `pimService` → `pim` |
+| Three.js 3D-сцена | `threeScene` |
 | Яндекс.Карты | `mapsWidget` → `yandexMaps` |
 | PDF / Excel / JSON | `exportService` |
 | Асинхронная обработка DWG/PDF | `snowbag.worker` |

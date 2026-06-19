@@ -109,7 +109,7 @@ def sql_str(s):
     return "'" + str(s).replace("'", "''") + "'"
 
 
-def main():
+def main(out_path=None):
     if not TOKEN:
         sys.stderr.write("Нет PIM_TOKEN в окружении\n")
         sys.exit(1)
@@ -179,9 +179,21 @@ def main():
                 f"INSERT INTO thermal_system_layers (system_ekn, ord, material_ekn, role, default_thickness_mm, is_insulant) "
                 f"VALUES ({sql_str(sys_ekn)}, {n}, {sql_str(mat_ekn)}, {sql_str(label)}, {thick}, {str(insulant).upper()});")
     out.append("COMMIT;")
-    print("\n".join(out))
+    sql = "\n".join(out)
+    if out_path:
+        with open(out_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(sql)
+        sys.stderr.write(f"SQL записан в {out_path}\n")
+    else:
+        print(sql)
     sys.stderr.write(f"\nГотово: систем {len([s for s in sys_layers.values() if s])}, материалов {len(materials)}\n")
 
 
 if __name__ == "__main__":
-    main()
+    out_path = None
+    if len(sys.argv) >= 3 and sys.argv[1] == "--out":
+        out_path = sys.argv[2]
+    elif hasattr(sys.stdout, "reconfigure"):
+        # На Windows pipe в psql через PowerShell ломает кириллицу — пишем в файл.
+        sys.stdout.reconfigure(encoding="utf-8")
+    main(out_path)

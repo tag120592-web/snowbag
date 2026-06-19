@@ -9,18 +9,16 @@ const props = defineProps<{
   lat?: number | null
   lon?: number | null
   city?: string
-  /** Initial zoom level (restored between wizard steps). */
   zoom?: number | null
-  /** Map center restored between wizard steps (may differ from placemark coords after pan). */
   center?: [number, number] | null
-  /** When false, map is view-only (for geometry tracing overlay). */
   interactive?: boolean
-  /** When false with interactive, pan/zoom work but map click does not move the pin. */
   allowClick?: boolean
+  viewportSync?: boolean
 }>()
 
 const interactive = computed(() => props.interactive !== false)
 const allowClick = computed(() => props.allowClick !== false)
+const viewportSync = computed(() => props.viewportSync !== false)
 
 const emit = defineEmits<{
   select: [payload: MapSelectPayload]
@@ -28,6 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const apiKey = ref(import.meta.env.VITE_YANDEX_MAPS_API_KEY ?? '')
+const mapWrapEl = ref<HTMLDivElement | null>(null)
 const mapEl = ref<HTMLDivElement | null>(null)
 const loadError = ref('')
 const geocoding = ref(false)
@@ -63,10 +62,21 @@ function applyGeocodeResult(result: { address: string; lat: number; lon: number;
 let map: InstanceType<NonNullable<typeof window.ymaps>['Map']> | null = null
 let placemark: unknown = null
 let scriptPromise: Promise<void> | null = null
-let viewportListener: (() => void) | null = null
+let initPromise: Promise<void> | null = null
+let viewportEndListener: (() => void) | null = null
+let actionStartListener: (() => void) | null = null
+let actionEndListener: (() => void) | null = null
 let resizeObserver: ResizeObserver | null = null
-/** Skip prop→map sync right after map→parent viewport emit (avoids breaking drag/zoom). */
+let wheelListener: ((e: WheelEvent) => void) | null = null
+let panMouseDown: ((e: MouseEvent) => void) | null = null
+let panMouseMove: ((e: MouseEvent) => void) | null = null
+let panMouseUp: (() => void) | null = null
 let suppressViewportApply = false
+let userInteracting = false
+let panActive = false
+let panStart: [number, number] | null = null
+let panMovedPx = 0
+let suppressMapClick = false
 
 function normalizeCity(city: string) {
   return city.trim().toLowerCase().replace(/^г\.?\s*/, '')
@@ -94,7 +104,9 @@ function emitViewport() {
   if (!map) return
   suppressViewportApply = true
   emit('viewportChange', { zoom: map.getZoom(), center: mapCenter() })
-  void nextTick(() => { suppressViewportApply = false })
+  void nextTick(() => {
+    requestAnimationFrame(() => { suppressViewportApply = false })
+  })
 }
 
 function viewportMatchesProps(): boolean {
@@ -103,18 +115,120 @@ function viewportMatchesProps(): boolean {
   const zoom = props.zoom ?? map.getZoom()
   const cur = map.getCenter()
   return (
-    Math.abs(cur[0] - center[0]) < 1e-6
-    && Math.abs(cur[1] - center[1]) < 1e-6
+    Math.abs(cur[0] - center[0]) < 1e-5
+    && Math.abs(cur[1] - center[1]) < 1e-5
     && map.getZoom() === zoom
   )
 }
 
+function syncMapElementSize(): boolean {
+  const wrap = mapWrapEl.value
+  const el = mapEl.value
+  if (!wrap || !el) return false
+  const w = wrap.clientWidth
+  const h = wrap.clientHeight
+  if (w < 1 || h < 1) return false
+  el.style.width = `${w}px`
+  el.style.height = `${h}px`
+  return true
+}
+
+function panByPixels(dx: number, dy: number) {
+  if (!map) return
+  const px = map.getGlobalPixelCenter()
+  map.setGlobalPixelCenter([px[0] - dx, px[1] - dy], map.getZoom())
+}
+
 function bindResizeObserver() {
-  if (!mapEl.value || resizeObserver) return
+  const target = mapWrapEl.value
+  if (!target || resizeObserver) return
   resizeObserver = new ResizeObserver(() => {
-    map?.container.fitToViewport()
+    if (syncMapElementSize()) void fitMapToContainer()
   })
-  resizeObserver.observe(mapEl.value)
+  resizeObserver.observe(target)
+}
+
+function bindWheelZoom() {
+  const target = mapWrapEl.value
+  if (!target || wheelListener) return
+  wheelListener = (e: WheelEvent) => {
+    if (!map || !interactive.value) return
+    e.preventDefault()
+    e.stopPropagation()
+    const delta = e.deltaY
+    if (delta === 0) return
+    userInteracting = true
+    const next = map.getZoom() + (delta > 0 ? -1 : 1)
+    map.setZoom(next, { duration: 150, checkZoomRange: true })
+    window.setTimeout(() => {
+      userInteracting = false
+      emitViewport()
+    }, 160)
+  }
+  target.addEventListener('wheel', wheelListener, { passive: false })
+}
+
+function unbindWheelZoom() {
+  if (mapWrapEl.value && wheelListener) {
+    mapWrapEl.value.removeEventListener('wheel', wheelListener)
+  }
+  wheelListener = null
+}
+
+function bindPanHandlers() {
+  const wrap = mapWrapEl.value
+  if (!wrap || panMouseDown) return
+
+  panMouseDown = (e: MouseEvent) => {
+    if (!interactive.value || e.button !== 0) return
+    if ((e.target as HTMLElement).closest('[class*="zoom"]')) return
+    suppressMapClick = false
+    panActive = true
+    panMovedPx = 0
+    panStart = [e.clientX, e.clientY]
+    userInteracting = true
+    wrap.classList.add('map-wrap--dragging')
+  }
+
+  panMouseMove = (e: MouseEvent) => {
+    if (!panActive || !panStart || !map) return
+    const dx = e.clientX - panStart[0]
+    const dy = e.clientY - panStart[1]
+    if (dx === 0 && dy === 0) return
+    panMovedPx += Math.abs(dx) + Math.abs(dy)
+    panStart = [e.clientX, e.clientY]
+    panByPixels(dx, dy)
+    e.preventDefault()
+  }
+
+  panMouseUp = () => {
+    if (!panActive) return
+    panActive = false
+    panStart = null
+    userInteracting = false
+    wrap.classList.remove('map-wrap--dragging')
+    if (panMovedPx > 2) {
+      suppressMapClick = true
+      emitViewport()
+    }
+    panMovedPx = 0
+  }
+
+  wrap.addEventListener('mousedown', panMouseDown)
+  window.addEventListener('mousemove', panMouseMove)
+  window.addEventListener('mouseup', panMouseUp)
+}
+
+function unbindPanHandlers() {
+  const wrap = mapWrapEl.value
+  if (wrap && panMouseDown) wrap.removeEventListener('mousedown', panMouseDown)
+  if (panMouseMove) window.removeEventListener('mousemove', panMouseMove)
+  if (panMouseUp) window.removeEventListener('mouseup', panMouseUp)
+  panMouseDown = null
+  panMouseMove = null
+  panMouseUp = null
+  panActive = false
+  panStart = null
 }
 
 function loadYmapsScript(): Promise<void> {
@@ -161,23 +275,59 @@ function setPlacemark(lat: number, lon: number) {
   const ymaps = window.ymaps as typeof window.ymaps & Record<string, unknown>
   const Placemark = ymaps.Placemark as new (coords: number[], props?: object, options?: object) => unknown
   if (placemark) map.geoObjects.remove(placemark)
-  placemark = new Placemark([lat, lon], {}, { preset: 'islands#redIcon' })
+  placemark = new Placemark([lat, lon], {}, { preset: 'islands#redIcon', draggable: false })
   map.geoObjects.add(placemark)
 }
 
 function setMapInteractivity(enabled: boolean) {
   if (!map) return
+  // Native drag/scroll often fail inside flex layouts — pan/zoom handled on map-wrap.
   const behaviors = ['scrollZoom', 'drag', 'dblClickZoom', 'multiTouch'] as const
   for (const b of behaviors) {
-    if (enabled) map.behaviors.enable(b)
-    else map.behaviors.disable(b)
+    map.behaviors.disable(b)
+  }
+  if (enabled) map.behaviors.enable('dblClickZoom')
+}
+
+function clearMapEventListeners() {
+  if (!map) return
+  if (viewportEndListener) {
+    map.events.remove('actionend', viewportEndListener)
+    viewportEndListener = null
+  }
+  if (actionStartListener) {
+    map.events.remove('actionstart', actionStartListener)
+    actionStartListener = null
+  }
+  if (actionEndListener) {
+    map.events.remove('actionend', actionEndListener)
+    actionEndListener = null
   }
 }
 
 function bindViewportEvents() {
-  if (!map || viewportListener) return
-  viewportListener = () => emitViewport()
-  map.events.add('boundschange', viewportListener)
+  if (!map || viewportEndListener) return
+  actionStartListener = () => { userInteracting = true }
+  actionEndListener = () => { userInteracting = false }
+  viewportEndListener = () => emitViewport()
+  map.events.add('actionstart', actionStartListener)
+  map.events.add('actionend', actionEndListener)
+  map.events.add('actionend', viewportEndListener)
+}
+
+async function waitForContainerSize(maxAttempts = 30): Promise<boolean> {
+  for (let i = 0; i < maxAttempts; i += 1) {
+    await nextTick()
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    if (syncMapElementSize()) return true
+  }
+  return false
+}
+
+async function fitMapToContainer() {
+  if (!map) return
+  if (!syncMapElementSize()) return
+  map.container.fitToViewport()
 }
 
 function applyViewportFromProps() {
@@ -193,20 +343,27 @@ function applyViewportFromProps() {
 }
 
 async function initMap() {
+  if (initPromise) return initPromise
+  initPromise = doInitMap().finally(() => { initPromise = null })
+  return initPromise
+}
+
+async function doInitMap() {
   if (!mapEl.value) return
   loadError.value = ''
   try {
+    await waitForContainerSize()
     await loadYmapsScript()
     await new Promise<void>((resolve) => window.ymaps!.ready(resolve))
     if (map) {
-      if (viewportListener) {
-        map.events.remove('boundschange', viewportListener)
-        viewportListener = null
-      }
+      clearMapEventListeners()
+      unbindWheelZoom()
+      unbindPanHandlers()
       map.destroy()
       map = null
       placemark = null
     }
+    syncMapElementSize()
     const center = defaultCenter()
     map = new window.ymaps!.Map(
       mapEl.value,
@@ -214,16 +371,16 @@ async function initMap() {
       { suppressMapOpenBlock: true },
     )
     map.setType('yandex#satellite')
-    map.behaviors.enable('scrollZoom')
-    map.behaviors.enable('drag')
-    map.behaviors.enable('dblClickZoom')
-    map.behaviors.enable('multiTouch')
     setMapInteractivity(interactive.value)
     if (props.lat != null && props.lon != null) {
       setPlacemark(props.lat, props.lon)
     }
     if (interactive.value && allowClick.value) {
       map.events.add('click', (event: { get: (key: string) => number[] }) => {
+        if (suppressMapClick) {
+          suppressMapClick = false
+          return
+        }
         const coords = event.get('coords')
         const lat = coords[0]
         const lon = coords[1]
@@ -239,8 +396,11 @@ async function initMap() {
       })
     }
     bindViewportEvents()
+    bindPanHandlers()
+    bindWheelZoom()
     bindResizeObserver()
-    map.container.fitToViewport()
+    await fitMapToContainer()
+    requestAnimationFrame(() => { void fitMapToContainer() })
   } catch (e) {
     scriptPromise = null
     loadError.value = e instanceof Error ? e.message : 'Не удалось загрузить Яндекс.Карты'
@@ -265,10 +425,20 @@ async function geocode(query: string) {
 }
 
 watch(
-  () => [props.center, props.zoom, props.lat, props.lon] as const,
-  () => {
-    if (!map || suppressViewportApply) return
+  () => [props.lat, props.lon] as const,
+  (cur, prev) => {
+    if (!map || suppressViewportApply || userInteracting) return
+    if (cur[0] === prev?.[0] && cur[1] === prev?.[1]) return
     applyViewportFromProps()
+  },
+)
+
+watch(
+  () => [props.center, props.zoom] as const,
+  () => {
+    if (!viewportSync.value) return
+    if (!map || suppressViewportApply || userInteracting) return
+    if (!viewportMatchesProps()) applyViewportFromProps()
   },
 )
 
@@ -276,26 +446,31 @@ watch(interactive, (enabled) => {
   setMapInteractivity(enabled)
 })
 
-onMounted(() => { void initMap() })
+onMounted(async () => {
+  await initMap()
+})
 
 onUnmounted(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  unbindWheelZoom()
+  unbindPanHandlers()
   if (map) {
-    if (viewportListener) {
-      map.events.remove('boundschange', viewportListener)
-      viewportListener = null
-    }
+    clearMapEventListeners()
     map.destroy()
     map = null
   }
 })
 
-defineExpose({ geocode })
+defineExpose({ geocode, relayout: fitMapToContainer })
 </script>
 
 <template>
-  <div class="map-wrap">
+  <div
+    ref="mapWrapEl"
+    class="map-wrap"
+    :class="{ 'map-wrap--interactive': interactive }"
+  >
     <div ref="mapEl" class="map-root" tabindex="0" />
     <div v-if="loadError" class="map-error">
       <p>{{ loadError }}</p>
@@ -314,18 +489,29 @@ defineExpose({ geocode })
   overflow: hidden;
   border: 1px solid var(--border-secondary-enabled);
   min-height: 360px;
+  min-width: 0;
+  height: 100%;
 }
-.map-root { width: 100%; height: 100%; min-height: 360px; outline: none; touch-action: none; }
+.map-wrap--interactive { cursor: grab; }
+.map-wrap--interactive.map-wrap--dragging { cursor: grabbing; }
+.map-root {
+  position: absolute;
+  inset: 0;
+  outline: none;
+  touch-action: none;
+}
 .map-error {
-  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 24px; text-align: center; background: rgba(255,255,255,.92); color: var(--red-60);
   font-size: 13px; font-weight: 600;
 }
 .map-error-hint { margin-top: 8px; color: var(--content-secondary-enabled); font-weight: 400; font-size: 12px; }
 .map-error-hint code { font-family: var(--font-family-mono); font-size: 11px; }
 .map-loading {
-  position: absolute; top: 12px; right: 12px; padding: 8px 12px; border-radius: 8px;
+  position: absolute; top: 12px; right: 12px; z-index: 1;
+  padding: 8px 12px; border-radius: 8px;
   background: rgba(255,255,255,.95); font-size: 12px; font-weight: 600;
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-small); pointer-events: none;
 }
 </style>

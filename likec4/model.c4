@@ -24,12 +24,6 @@ model {
     description 'Геокодинг адреса, выбор объекта на карте, ориентация здания.'
   }
 
-  corporateSSO = externalSystem 'Корпоративный SSO' {
-    #external #mvp
-    technology 'SAML 2.0 / OIDC'
-    description 'Единый вход сотрудников и авторизованных партнёров.'
-  }
-
   climateRef = externalSystem 'Справочник климатических районов' {
     #external #mvp
     description '''
@@ -38,16 +32,21 @@ model {
     '''
   }
 
-  crm = externalSystem 'CRM' {
-    #external #postmvp
-    description 'Интеграция на этапе эксплуатации (этап 5 дорожной карты).'
+  pim = externalSystem 'ПИМ (QRC API)' {
+    #external #mvp
+    technology 'REST, Bearer token'
+    description '''
+      Каталог систем и материалов ТЕХНОНИКОЛЬ.
+      ЕКН, состав кровельных систем, λ, μ, плотность.
+      Синхронизация через scripts/pim_sync.py и api/internal/pim/.
+    '''
   }
 
-  snowbag = softwareSystem 'Снеговые мешки' {
+  snowbag = softwareSystem 'Формула расчета' {
     #mvp
   description '''
-      SaaS для проектирования и анализа систем мониторинга
-      снеговой нагрузки на плоских кровлях.
+      SaaS для проектирования и анализа систем
+      вычислительного комплекса на плоских кровлях.
       Цель MVP: подготовка проекта ≤ 10 минут.
     '''
 
@@ -55,7 +54,7 @@ model {
       #mvp
       technology 'Vue 3, Vite, Three.js'
       description '''
-        Загрузка файлов, редактор схемы кровли, 2D/3D визуализация,
+        Загрузка файлов, редактор схемы кровли, 2D-схема и 3D-сцена (Three.js),
         Яндекс.Карты, экспорт документов.
       '''
 
@@ -67,9 +66,17 @@ model {
         description 'Ручная и автоматическая корректировка контура, препятствий, ориентации.'
       }
 
-      schemeViewer = component 'Визуализация' {
-        technology 'Canvas / Three.js'
-        description '2D-схема и 3D-карта (тепловая карта) снеговых зон и датчиков.'
+      schemeViewer = component '2D-визуализация' {
+        technology 'Canvas / SVG'
+        description '2D-схема снеговых зон, датчиков и препятствий на кровле.'
+      }
+
+      threeScene = component '3D-сцена' {
+        technology 'Three.js'
+        description '''
+          WebGL-рендер кровли, препятствий и тепловой карты снеговых зон.
+          roofThreeScene.ts — орбитальная камера, освещение, цветовая шкала глубины снега.
+        '''
       }
 
       mapsWidget = component 'Виджет карт' {
@@ -81,7 +88,8 @@ model {
       }
 
       fileUpload -> roofEditor 'передаёт геометрию'
-      roofEditor -> schemeViewer 'отображает результат'
+      roofEditor -> schemeViewer '2D-схема'
+      roofEditor -> threeScene '3D-модель кровли'
       mapsWidget -> roofEditor 'координаты и ориентация'
       schemeViewer -> exportUI 'данные схемы'
     }
@@ -97,7 +105,7 @@ model {
       }
 
       auth = component 'Авторизация' {
-        description 'SSO, сессии, журнал действий пользователей.'
+        description 'JWT-сессии, проверка прав, журнал действий пользователей.'
       }
 
       projectService = component 'Сервис проектов' {
@@ -127,6 +135,14 @@ model {
         description 'Определение снегового/ветрового района по адресу.'
       }
 
+      pimService = component 'Сервис ПИМ' {
+        technology 'Go, QRC API client'
+        description '''
+          Кэш систем и материалов кровли из ПИМ.
+          DemoProvider / QRCProvider, rate-limit 2 rps, синк по ЕКН.
+        '''
+      }
+
       exportService = component 'Сервис экспорта' {
         technology 'gofpdf, excelize'
         description 'Генерация PDF-схемы, Excel-отчёта, JSON для интеграций.'
@@ -140,6 +156,7 @@ model {
       restAPI -> exportService 'формирует документы'
       analyticsEngine -> climateService 'районы и роза ветров'
       geoEngine -> analyticsEngine 'контур и препятствия'
+      restAPI -> pimService 'системы и материалы'
     }
 
     worker = container 'Воркер обработки' {
@@ -223,16 +240,14 @@ model {
       technology 'HTTPS'
     }
 
-    auth -> corporateSSO 'аутентификация' {
-      #external
-      technology 'OIDC / SAML'
-    }
-
     climateService -> climateRef 'справочные данные' {
       #external
     }
 
-    api -[async]-> crm 'синхронизация проектов' 'Этап эксплуатации' 'REST'
+    pimService -> pim 'карточки продуктов по ЕКН' {
+      #external
+      technology 'HTTPS / REST'
+    }
   }
 
   engineer -> snowbag 'проектирует систему мониторинга'

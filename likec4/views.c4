@@ -1,14 +1,14 @@
 views {
   view index {
     title 'C1 — Контекст системы'
-    description 'Пользователи и внешние системы вокруг SaaS «Снеговые мешки».'
+    description 'Пользователи и внешние системы вокруг SaaS «Формула расчета».'
     include
       engineer,
       partner,
       snowbag,
       yandexMaps,
-      corporateSSO,
-      climateRef
+      climateRef,
+      pim
 
     style engineer, partner {
       color green
@@ -16,7 +16,7 @@ views {
     style snowbag {
       color primary
     }
-    style yandexMaps, corporateSSO, climateRef {
+    style yandexMaps, climateRef, pim {
       color muted
     }
   }
@@ -25,10 +25,9 @@ views {
     title 'C1 — Полный контекст (с post-MVP)'
     include
       *,
-      buildingOwner,
-      crm
+      buildingOwner
 
-    style buildingOwner, crm {
+    style buildingOwner {
       color secondary
     }
   }
@@ -37,12 +36,13 @@ views {
     title 'C2 — Контейнеры'
     description '''
       Основные технические блоки MVP:
-      Vue 3 frontend, Go API, воркер, PostGIS, Redis, S3.
+      Vue 3 + Three.js frontend, Go API, воркер, PostGIS, Redis, S3, интеграция с ПИМ.
     '''
     include
       *,
       engineer -> snowbag.*,
-      partner -> snowbag.*
+      partner -> snowbag.*,
+      snowbag.api -> pim
 
     style snowbag.webApp {
       color blue
@@ -59,14 +59,18 @@ views {
     style snowbag.objectStorage {
       color secondary
     }
+    style pim {
+      color muted
+    }
   }
 
   view backend of snowbag.api {
     title 'C3 — Компоненты API-сервера'
-    description 'Go backend: геометрия, аналитика, экспорт, интеграции.'
+    description 'Go backend: геометрия, аналитика, экспорт, интеграция с ПИМ.'
     include
       *,
-      snowbag.api.climateService -> climateRef
+      snowbag.api.climateService -> climateRef,
+      snowbag.api.pimService -> pim
 
     style snowbag.api.geoEngine {
       color blue
@@ -77,15 +81,22 @@ views {
     style snowbag.api.exportService {
       color green
     }
+    style snowbag.api.pimService {
+      color secondary
+    }
   }
 
   view frontend of snowbag.webApp {
     title 'C3 — Компоненты Web-приложения'
-    description 'Vue 3: загрузка, редактор, визуализация, карты, экспорт.'
+    description 'Vue 3: загрузка, редактор, 2D/3D (Three.js), карты, экспорт.'
     include
       *,
       snowbag.webApp -> snowbag.api,
       snowbag.webApp.mapsWidget -> yandexMaps
+
+    style snowbag.webApp.threeScene {
+      color amber
+    }
   }
 
   view worker of snowbag.worker {
@@ -102,7 +113,7 @@ views {
     title 'Поток MVP — от чертежа до экспорта'
     description '''
       1. Загрузка чертежа или адрес на карте
-      2. Авто/ручная геометрия кровли
+      2. Авто/ручная геометрия кровли, выбор системы кровли (материалы из ПИМ)
       3. Расчёт снеговых мешков и датчиков
       4. PDF / Excel / JSON
     '''
@@ -116,18 +127,28 @@ views {
       snowbag.api,
       snowbag.api.geoEngine,
       snowbag.api.analyticsEngine,
+      snowbag.api.pimService,
       snowbag.api.exportService,
       snowbag.worker,
       snowbag.postgis,
       snowbag.objectStorage,
       yandexMaps,
       climateRef,
+      pim,
       engineer -> snowbag.webApp,
       snowbag.webApp -> snowbag.api,
       snowbag.api -> snowbag.worker,
       snowbag.api -> snowbag.postgis,
       snowbag.api -> snowbag.objectStorage,
-      snowbag.api.analyticsEngine -> climateRef
+      snowbag.api.analyticsEngine -> climateRef,
+      snowbag.api.pimService -> pim
+
+    style pim {
+      color muted
+    }
+    style snowbag.api.pimService {
+      color secondary
+    }
   }
 
   view deployment {
@@ -141,8 +162,8 @@ views {
       partner,
       snowbag,
       yandexMaps,
-      corporateSSO,
       climateRef,
+      pim,
       snowbag.webApp,
       snowbag.api,
       snowbag.worker,

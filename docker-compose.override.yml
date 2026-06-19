@@ -1,0 +1,5 @@
+# Windows: порт 5432 часто в excluded range Hyper-V (5341–5440).
+services:
+  postgres:
+    ports: !override
+      - "5542:5432"
