@@ -3,7 +3,9 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { CalculationData, GeometryData } from '@/types'
-import { buildRoofScene, disposeObject3D, fitCameraToGroup } from '@/utils/roofThreeScene'
+import { buildRoofScene, disposeObject3D, fitCameraToGroup, type SnowCoverHandle } from '@/utils/roofThreeScene'
+import { roofBounds } from '@/utils/roof3d'
+import { VIEW_H, VIEW_W } from '@/composables/useRoofDrawing'
 
 const props = defineProps<{
   geometry: GeometryData
@@ -18,8 +20,108 @@ let scene: THREE.Scene | null = null
 let camera: THREE.PerspectiveCamera | null = null
 let controls: OrbitControls | null = null
 let content: THREE.Group | null = null
+let snowCover: SnowCoverHandle | null = null
+let snowfall: THREE.Points | null = null
+let snowVelocities: Float32Array | null = null
+let snowAccumulation = 0
+let snowAccumStart = 0
+const SNOW_ACCUM_DURATION_MS = 12000
+const SNOW_PARTICLE_COUNT = 1800
 let raf = 0
 let resizeObserver: ResizeObserver | null = null
+
+function disposeSnowfall() {
+  if (snowfall && scene) {
+    scene.remove(snowfall)
+    snowfall.geometry.dispose()
+    ;(snowfall.material as THREE.Material).dispose()
+  }
+  snowfall = null
+  snowVelocities = null
+}
+
+function initSnowfall() {
+  if (!scene) return
+  disposeSnowfall()
+
+  const roof = props.geometry.roof ?? []
+  if (roof.length < 3) return
+
+  const bounds = roofBounds(roof)
+  const ox = VIEW_W / 2
+  const oz = VIEW_H / 2
+  const spanX = bounds.maxX - bounds.minX
+  const spanY = bounds.maxY - bounds.minY
+  const pad = Math.max(spanX, spanY) * 0.35
+  const minX = bounds.minX - pad - ox
+  const maxX = bounds.maxX + pad - ox
+  const minZ = oz - bounds.maxY - pad
+  const maxZ = oz - bounds.minY + pad
+  const topY = 120 + Math.max(spanX, spanY) * 0.15
+
+  const positions = new Float32Array(SNOW_PARTICLE_COUNT * 3)
+  snowVelocities = new Float32Array(SNOW_PARTICLE_COUNT)
+
+  for (let i = 0; i < SNOW_PARTICLE_COUNT; i += 1) {
+    positions[i * 3] = minX + Math.random() * (maxX - minX)
+    positions[i * 3 + 1] = Math.random() * topY
+    positions[i * 3 + 2] = minZ + Math.random() * (maxZ - minZ)
+    snowVelocities[i] = 0.35 + Math.random() * 0.55
+  }
+
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  snowfall = new THREE.Points(
+    geo,
+    new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 2.2,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    }),
+  )
+  scene.add(snowfall)
+  snowAccumulation = 0
+  snowAccumStart = performance.now()
+}
+
+function updateSnowfall() {
+  if (!snowfall || !snowVelocities) return
+
+  const roof = props.geometry.roof ?? []
+  const bounds = roofBounds(roof)
+  const ox = VIEW_W / 2
+  const oz = VIEW_H / 2
+  const spanX = bounds.maxX - bounds.minX
+  const spanY = bounds.maxY - bounds.minY
+  const pad = Math.max(spanX, spanY) * 0.35
+  const minX = bounds.minX - pad - ox
+  const maxX = bounds.maxX + pad - ox
+  const minZ = oz - bounds.maxY - pad
+  const maxZ = oz - bounds.minY + pad
+  const topY = 120 + Math.max(spanX, spanY) * 0.15
+
+  const pos = snowfall.geometry.attributes.position as THREE.BufferAttribute
+  for (let i = 0; i < SNOW_PARTICLE_COUNT; i += 1) {
+    let y = pos.getY(i) - snowVelocities[i]
+    let x = pos.getX(i) + (Math.random() - 0.5) * 0.08
+    let z = pos.getZ(i) + (Math.random() - 0.5) * 0.08
+    if (y < 0) {
+      y = topY * (0.4 + Math.random() * 0.6)
+      x = minX + Math.random() * (maxX - minX)
+      z = minZ + Math.random() * (maxZ - minZ)
+    }
+    pos.setXYZ(i, x, y, z)
+  }
+  pos.needsUpdate = true
+
+  if (snowCover) {
+    const elapsed = performance.now() - snowAccumStart
+    snowAccumulation = Math.min(1, elapsed / SNOW_ACCUM_DURATION_MS)
+    snowCover.setAccumulation(snowAccumulation)
+  }
+}
 
 function rebuildScene() {
   if (!scene || !camera || !controls) return
@@ -29,10 +131,19 @@ function rebuildScene() {
     disposeObject3D(content)
     content = null
   }
+  snowCover?.dispose()
+  snowCover = null
+  disposeSnowfall()
 
-  content = buildRoofScene(props.geometry, props.calculation, props.layers ?? {})
+  const built = buildRoofScene(props.geometry, props.calculation, {
+    ...props.layers,
+    bags: false,
+  })
+  content = built.group
+  snowCover = built.snowCover
   scene.add(content)
   fitCameraToGroup(camera, controls, content)
+  initSnowfall()
 }
 
 function resize() {
@@ -48,6 +159,7 @@ function resize() {
 
 function animate() {
   controls?.update()
+  updateSnowfall()
   if (renderer && scene && camera) {
     renderer.render(scene, camera)
   }
@@ -99,6 +211,9 @@ function destroy() {
     disposeObject3D(content)
     content = null
   }
+  snowCover?.dispose()
+  snowCover = null
+  disposeSnowfall()
 
   controls?.dispose()
   controls = null
@@ -135,7 +250,7 @@ watch(
         <li><span class="swatch" style="background:#f5a623" />30–50 см</li>
         <li><span class="swatch" style="background:#e11b11" />&gt;50 см</li>
       </ul>
-      <p class="hint">Сугробы не выше парапета · перетащите для вращения</p>
+      <p class="hint">Снег накапливается на кровле · перетащите для вращения</p>
     </div>
   </div>
 </template>

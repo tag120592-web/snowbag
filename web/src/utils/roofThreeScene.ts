@@ -1,18 +1,28 @@
 import * as THREE from 'three'
 import type { CalculationData, GeometryData, Obstacle } from '@/types'
-import { VIEW_H, VIEW_W, polylineWallSegments, roofEdgeSegments } from '@/composables/useRoofDrawing'
+import { PX_PER_M, VIEW_H, VIEW_W, polylineWallSegments, roofEdgeSegments } from '@/composables/useRoofDrawing'
 import {
   ROOF_ELEVATION,
   Z_PER_METER,
-  centroid,
+  edgeInwardNormal,
   maxParapetM,
   metersToZ,
   obstacleVisualHeight,
   pointInPoly,
   roofBounds,
+  roofDeckPolygon,
   snowDepthColor,
-  snowDepthMAt,
 } from '@/utils/roof3d'
+
+/** Parapet wall thickness in plan view (300 mm). */
+const PARAPET_THICKNESS = 0.3 * PX_PER_M
+
+export interface SnowCoverHandle {
+  mesh: THREE.Mesh
+  /** 0…1 — fraction of target snow depth. */
+  setAccumulation: (t: number) => void
+  dispose: () => void
+}
 
 /** Match SVG viewBox origin so 2D and 3D coordinates align (SVG Y grows down → negate for Three.js Z). */
 function sceneOrigin(): [number, number] {
@@ -39,10 +49,11 @@ export function buildRoofScene(
   geometry: GeometryData,
   calculation: CalculationData | null | undefined,
   layers: { roof?: boolean; obstacles?: boolean; bags?: boolean; sensors?: boolean },
-): THREE.Group {
+): { group: THREE.Group; snowCover: SnowCoverHandle | null } {
   const group = new THREE.Group()
   const [ox, oz] = sceneOrigin()
   const parapetCapM = maxParapetM(geometry)
+  let snowCover: SnowCoverHandle | null = null
   const show = {
     roof: layers.roof !== false,
     obstacles: layers.obstacles !== false,
@@ -51,7 +62,8 @@ export function buildRoofScene(
 
   if (show.roof && geometry.roof?.length) {
     group.add(buildBuildingShell(geometry, ox, oz))
-    group.add(buildSnowCover(geometry, calculation?.snowbags, ox, oz, parapetCapM))
+    snowCover = buildSnowCover(geometry, ox, oz, parapetCapM)
+    group.add(snowCover.mesh)
     group.add(buildParapets(geometry.roof, geometry.sideParapets, ox, oz))
   }
 
@@ -67,14 +79,15 @@ export function buildRoofScene(
     }
   }
 
-  return group
+  return { group, snowCover }
 }
 
 function buildBuildingShell(geometry: GeometryData, ox: number, oz: number): THREE.Group {
   const g = new THREE.Group()
-  const roof = geometry.roof ?? []
-  if (roof.length < 3) return g
+  const outer = geometry.roof ?? []
+  if (outer.length < 3) return g
 
+  const roof = roofDeckPolygon(outer, PARAPET_THICKNESS)
   const roofShape = toShape(roof, ox, oz)
   const topGeo = new THREE.ShapeGeometry(roofShape)
   topGeo.rotateX(-Math.PI / 2)
@@ -87,87 +100,94 @@ function buildBuildingShell(geometry: GeometryData, ox: number, oz: number): THR
 
 function buildSnowCover(
   geometry: GeometryData,
-  bags: CalculationData['snowbags'],
   ox: number,
   oz: number,
   parapetCapM: number,
-): THREE.Group {
-  const g = new THREE.Group()
-  const roof = geometry.roof ?? []
-  if (roof.length < 3) return g
-
+): SnowCoverHandle {
+  const outer = geometry.roof ?? []
+  const roof = roofDeckPolygon(outer, PARAPET_THICKNESS)
   const bounds = roofBounds(roof)
   const cols = 48
   const rows = 32
-  const geo = new THREE.PlaneGeometry(
-    bounds.maxX - bounds.minX,
-    bounds.maxY - bounds.minY,
-    cols,
-    rows,
-  )
+  const dx = (bounds.maxX - bounds.minX) / cols
+  const dy = (bounds.maxY - bounds.minY) / rows
+  const vertexCount = (cols + 1) * (rows + 1)
+  const positions = new Float32Array(vertexCount * 3)
+  const colors = new Float32Array(vertexCount * 3)
+  const indices: number[] = []
+  const planCoords: { lx: number; ly: number; inside: boolean }[] = []
+  const targetDepthM = Math.min(parapetCapM * 0.55, 0.35)
 
-  const pos = geo.attributes.position
-  const colors: number[] = []
-  const centerX = (bounds.minX + bounds.maxX) / 2
-  const centerY = (bounds.minY + bounds.maxY) / 2
-
-  for (let i = 0; i < pos.count; i += 1) {
-    // Read plan coords while geometry is still in XY (before rotateX).
-    const lx = pos.getX(i) + centerX
-    const ly = pos.getY(i) + centerY
-    const inside = pointInPoly(lx, ly, roof)
-    let depthM = inside ? snowDepthMAt(lx, ly, bags, parapetCapM) : 0
-
-    for (const bag of bags ?? []) {
-      const [bcx, bcy] = centroid(bag.poly)
-      const dist = Math.hypot(lx - bcx, ly - bcy)
-      const influence = Math.max(...bag.poly.map(([x, y]) => Math.hypot(x - bcx, y - bcy)), 20)
-      if (dist < influence * 1.15) {
-        const t = 1 - dist / (influence * 1.15)
-        const bagDepth = Math.min(
-          parapetCapM * 0.92,
-          bag.mu * 0.07 + (bag.risk === 'critical' ? 0.35 : 0.18),
-        )
-        depthM = Math.max(depthM, bagDepth * t * t)
-      }
+  for (let row = 0; row <= rows; row += 1) {
+    for (let col = 0; col <= cols; col += 1) {
+      const i = row * (cols + 1) + col
+      const lx = bounds.minX + col * dx
+      const ly = bounds.minY + row * dy
+      const inside = pointInPoly(lx, ly, roof)
+      planCoords.push({ lx, ly, inside })
+      positions[i * 3] = lx - ox
+      positions[i * 3 + 1] = ROOF_ELEVATION
+      positions[i * 3 + 2] = oz - ly
+      const c = new THREE.Color(inside ? snowDepthColor(targetDepthM) : 0xffffff)
+      colors[i * 3] = c.r
+      colors[i * 3 + 1] = c.g
+      colors[i * 3 + 2] = c.b
     }
-
-    depthM = Math.min(depthM, parapetCapM * 0.92)
-
-    if (!inside) {
-      pos.setX(i, lx - ox)
-      pos.setY(i, oz - ly)
-      pos.setZ(i, -(ROOF_ELEVATION - 300))
-      colors.push(0, 0, 0)
-      continue
-    }
-
-    const height = ROOF_ELEVATION + metersToZ(depthM)
-    pos.setX(i, lx - ox)
-    pos.setY(i, oz - ly)
-    pos.setZ(i, -height)
-
-    const c = new THREE.Color(snowDepthColor(depthM))
-    colors.push(c.r, c.g, c.b)
   }
 
-  geo.rotateX(-Math.PI / 2)
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      const a = row * (cols + 1) + col
+      const b = a + 1
+      const c = a + cols + 1
+      const d = c + 1
+      const corners = [a, b, d, c]
+      if (!corners.every((idx) => planCoords[idx].inside)) continue
+      indices.push(a, c, b, b, c, d)
+    }
+  }
 
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3))
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geo.setIndex(indices)
   geo.computeVertexNormals()
 
-  const mesh = new THREE.Mesh(
-    geo,
-    new THREE.MeshLambertMaterial({
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.92,
-      side: THREE.DoubleSide,
-    }),
-  )
-  g.add(mesh)
+  const material = new THREE.MeshLambertMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.92,
+    side: THREE.DoubleSide,
+  })
+  const mesh = new THREE.Mesh(geo, material)
 
-  return g
+  function setAccumulation(t: number) {
+    const clamped = Math.max(0, Math.min(1, t))
+    const pos = geo.attributes.position as THREE.BufferAttribute
+    for (let i = 0; i < planCoords.length; i += 1) {
+      const { inside } = planCoords[i]
+      const depthM = inside ? targetDepthM * clamped : 0
+      pos.setY(i, ROOF_ELEVATION + metersToZ(depthM))
+      if (inside) {
+        const c = new THREE.Color(snowDepthColor(depthM))
+        geo.attributes.color.setXYZ(i, c.r, c.g, c.b)
+      }
+    }
+    pos.needsUpdate = true
+    geo.attributes.color.needsUpdate = true
+    geo.computeVertexNormals()
+  }
+
+  setAccumulation(0)
+
+  return {
+    mesh,
+    setAccumulation,
+    dispose: () => {
+      geo.dispose()
+      material.dispose()
+    },
+  }
 }
 
 function buildParapets(
@@ -191,16 +211,20 @@ function buildParapets(
     const len = Math.hypot(dx, dy)
     if (len < 1) continue
 
-    const midX = (a[0] + b[0]) / 2 - ox
-    const midZ = oz - (a[1] + b[1]) / 2
+    const [inNx, inNy] = edgeInwardNormal(a, b, roof)
+    const shift = PARAPET_THICKNESS / 2
+    const planMx = (a[0] + b[0]) / 2 - inNx * shift
+    const planMy = (a[1] + b[1]) / 2 - inNy * shift
+    const midX = planMx - ox
+    const midZ = oz - planMy
     const angle = Math.atan2(-dy, dx)
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(len, height, 0.35), mat)
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(len, height, PARAPET_THICKNESS), mat)
     wall.position.set(midX, ROOF_ELEVATION + height / 2, midZ)
     wall.rotation.y = -angle
     g.add(wall)
 
     const cap = new THREE.Mesh(
-      new THREE.BoxGeometry(len, 0.12, 0.38),
+      new THREE.BoxGeometry(len, 0.12, PARAPET_THICKNESS + 0.08),
       new THREE.MeshLambertMaterial({ color: 0x4b5563 }),
     )
     cap.position.set(midX, ROOF_ELEVATION + height, midZ)

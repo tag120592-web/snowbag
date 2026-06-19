@@ -355,7 +355,6 @@ function onImageError() {
             :zoom="mapZoom"
             :center="mapCenter"
             :city="mapCity"
-            :viewport-sync="false"
             @select="onMapSelect"
             @viewport-change="emit('mapViewportChange', $event)"
           />

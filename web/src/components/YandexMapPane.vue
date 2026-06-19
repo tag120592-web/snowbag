@@ -78,6 +78,9 @@ let panStart: [number, number] | null = null
 let panMovedPx = 0
 let suppressMapClick = false
 
+const PAN_OPTS = { capture: true } as const
+const WHEEL_OPTS = { passive: false, capture: true } as const
+
 function normalizeCity(city: string) {
   return city.trim().toLowerCase().replace(/^г\.?\s*/, '')
 }
@@ -165,12 +168,12 @@ function bindWheelZoom() {
       emitViewport()
     }, 160)
   }
-  target.addEventListener('wheel', wheelListener, { passive: false })
+  target.addEventListener('wheel', wheelListener, WHEEL_OPTS)
 }
 
 function unbindWheelZoom() {
   if (mapWrapEl.value && wheelListener) {
-    mapWrapEl.value.removeEventListener('wheel', wheelListener)
+    mapWrapEl.value.removeEventListener('wheel', wheelListener, WHEEL_OPTS)
   }
   wheelListener = null
 }
@@ -214,14 +217,14 @@ function bindPanHandlers() {
     panMovedPx = 0
   }
 
-  wrap.addEventListener('mousedown', panMouseDown)
+  wrap.addEventListener('mousedown', panMouseDown, PAN_OPTS)
   window.addEventListener('mousemove', panMouseMove)
   window.addEventListener('mouseup', panMouseUp)
 }
 
 function unbindPanHandlers() {
   const wrap = mapWrapEl.value
-  if (wrap && panMouseDown) wrap.removeEventListener('mousedown', panMouseDown)
+  if (wrap && panMouseDown) wrap.removeEventListener('mousedown', panMouseDown, PAN_OPTS)
   if (panMouseMove) window.removeEventListener('mousemove', panMouseMove)
   if (panMouseUp) window.removeEventListener('mouseup', panMouseUp)
   panMouseDown = null
@@ -444,6 +447,13 @@ watch(
 
 watch(interactive, (enabled) => {
   setMapInteractivity(enabled)
+  if (enabled) {
+    bindPanHandlers()
+    bindWheelZoom()
+  } else {
+    unbindPanHandlers()
+    unbindWheelZoom()
+  }
 })
 
 onMounted(async () => {
