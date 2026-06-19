@@ -34,6 +34,11 @@ const props = defineProps<{
   layers?: { roof?: boolean; obstacles?: boolean; bags?: boolean; sensors?: boolean; wind?: boolean; underlay?: boolean; walkway?: boolean; parapet?: boolean }
   northDeg?: number
   underlayUrl?: string
+  /** Размещение подложки в координатах холста (для совмещения с распознанной геометрией). */
+  underlayTransform?: { x: number; y: number; w: number; h: number } | null
+  /** Окно отображения (zoom-to-fit): viewBox холста. Геометрия в реальном масштабе
+   *  мелкая — этим окном приближаем её к рабочей области, не меняя координат. */
+  fitBox?: { x: number; y: number; w: number; h: number } | null
   view3d?: boolean
   editable?: boolean
   editableSensors?: boolean
@@ -108,6 +113,19 @@ const show = computed(() => ({
   walkway: props.layers?.walkway !== false,
   parapet: props.layers?.parapet !== false,
 }))
+
+// Бокс подложки: по умолчанию весь холст (ручной режим), либо заданный трансформ
+// из распознавания (чтобы подложка совпала с геометрией в реальном масштабе).
+const ulBox = computed(() => props.underlayTransform ?? { x: 0, y: 0, w: 1000, h: 680 })
+
+// viewBox: по умолчанию весь холст; при наличии fitBox приближаем к нему (zoom вида).
+const viewBox = computed(() => {
+  const f = props.fitBox
+  return f ? `${f.x} ${f.y} ${f.w} ${f.h}` : '0 0 1000 680'
+})
+// Коэффициент зума: делим на него толщины линий, радиусы ручек, маркеры и подписи,
+// чтобы при приближении они оставались нормального экранного размера (1 без зума).
+const fz = computed(() => (props.fitBox ? 1000 / props.fitBox.w : 1))
 
 const isDrawing = computed(() => !!props.drawSession && props.editable)
 const isEditing = computed(() => !!props.editTarget && props.editable && !props.drawSession)
@@ -521,7 +539,7 @@ function roofSegmentLabels(points: number[][]) {
   const labels: Array<{ x: number; y: number; text: string }> = []
   for (const [a, b] of roofEdgeSegments(points)) {
     const [x, y] = segmentMidpoint(a, b)
-    labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
+    labels.push({ x, y: y - 8 / fz.value, text: formatLengthM(segmentLengthPx(a, b)) })
   }
   return labels
 }
@@ -533,7 +551,7 @@ function openPolylineLabels(points: number[][]) {
     const a = points[i - 1]
     const b = points[i]
     const [x, y] = segmentMidpoint(a, b)
-    labels.push({ x, y: y - 8, text: formatLengthM(segmentLengthPx(a, b)) })
+    labels.push({ x, y: y - 8 / fz.value, text: formatLengthM(segmentLengthPx(a, b)) })
   }
   return labels
 }
@@ -568,7 +586,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
   <div v-else class="wrap" :class="{ crosshair, 'pointer-passthrough': pointerPassthrough, 'map-edit-mode': pointerPassthrough && isEditing }">
     <svg
       ref="svgRef"
-      viewBox="0 0 1000 680"
+      :viewBox="viewBox"
       class="canvas"
       :class="{ 'canvas--overlay': transparentBg }"
       @mousedown="onCanvasDown"
@@ -603,10 +621,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
       <image
         v-if="show.underlay && underlayUrl"
         :href="underlayUrl"
-        x="0"
-        y="0"
-        width="1000"
-        height="680"
+        :x="ulBox.x"
+        :y="ulBox.y"
+        :width="ulBox.w"
+        :height="ulBox.h"
         :opacity="transparentBg ? 1 : 0.72"
         preserveAspectRatio="xMidYMid meet"
       />
@@ -616,14 +634,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :points="ptsStr(geometry.roof)"
           fill="#fff"
           :stroke="roofSelected ? 'var(--red-60)' : 'var(--neutral-65)'"
-          :stroke-width="roofSelected ? 3 : 2.5"
+          :stroke-width="(roofSelected ? 3 : 2.5) / fz"
         />
         <polygon
           v-if="show.parapet && showParapet"
           :points="ptsStr(geometry.roof)"
           fill="none"
           stroke="var(--neutral-45)"
-          stroke-width="7"
+          :stroke-width="7 / fz"
           stroke-opacity="0.35"
           stroke-linejoin="round"
           pointer-events="none"
@@ -634,10 +652,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             :key="`rv-${i}`"
             :cx="p[0]"
             :cy="p[1]"
-            r="6"
+            :r="6 / fz"
             fill="#fff"
             stroke="var(--red-60)"
-            stroke-width="2"
+            :stroke-width="2 / fz"
             class="handle map-interactive"
             @mousedown="startVertexDrag('roof', i, $event)"
           />
@@ -663,7 +681,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :x="lbl.x"
           :y="lbl.y"
           text-anchor="middle"
-          font-size="10"
+          :font-size="10 / fz"
           font-weight="700"
           fill="var(--red-60)"
           pointer-events="none"
@@ -684,10 +702,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             :key="`wv-${i}`"
             :cx="p[0]"
             :cy="p[1]"
-            r="6"
+            :r="6 / fz"
             fill="#fff"
             stroke="var(--red-60)"
-            stroke-width="2"
+            :stroke-width="2 / fz"
             class="handle map-interactive"
             @mousedown="startVertexDrag('walkway', i, $event)"
           />
@@ -705,15 +723,15 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               :x="o.x" :y="o.y" :width="o.w" :height="o.h"
               :fill="selectedObstacleId === o.id ? 'var(--red-10)' : 'var(--neutral-20)'"
               :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--neutral-55)'"
-              :stroke-width="selectedObstacleId === o.id ? 2.5 : 1.5"
+              :stroke-width="(selectedObstacleId === o.id ? 2.5 : 1.5) / fz"
               @mousedown="startRectMove(o, $event)"
             />
             <text
               v-if="o.shape === 'rect' && o.w && o.h && o.short"
               :x="(o.x ?? 0) + (o.w ?? 0) / 2"
-              :y="(o.y ?? 0) + (o.h ?? 0) / 2 + 4"
+              :y="(o.y ?? 0) + (o.h ?? 0) / 2 + 4 / fz"
               text-anchor="middle"
-              font-size="11"
+              :font-size="11 / fz"
               font-weight="600"
               fill="var(--content-secondary-enabled)"
               pointer-events="none"
@@ -721,19 +739,19 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
             <text
               v-if="o.shape === 'rect' && o.w && o.h && editable"
               :x="(o.x ?? 0) + (o.w ?? 0) / 2"
-              :y="(o.y ?? 0) + (o.h ?? 0) / 2 + 18"
+              :y="(o.y ?? 0) + (o.h ?? 0) / 2 + 18 / fz"
               text-anchor="middle"
-              font-size="10"
+              :font-size="10 / fz"
               font-weight="700"
               fill="var(--red-60)"
               pointer-events="none"
             >h {{ (o.hM ?? 0).toFixed(1) }} м</text>
             <circle
               v-else-if="o.shape === 'circle' && o.r"
-              :cx="o.cx" :cy="o.cy" :r="o.r"
+              :cx="o.cx" :cy="o.cy" :r="o.r / fz"
               :fill="selectedObstacleId === o.id ? 'var(--blue-10)' : 'var(--blue-40)'"
               :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--blue-60)'"
-              :stroke-width="selectedObstacleId === o.id ? 2.5 : 1.5"
+              :stroke-width="(selectedObstacleId === o.id ? 2.5 : 1.5) / fz"
               @mousedown="startCircleMove(o, $event)"
             />
             <polygon
@@ -741,14 +759,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               :points="ptsStr(o.points)"
               fill="none"
               :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--orange-40)'"
-              :stroke-width="selectedObstacleId === o.id ? 3 : 2"
+              :stroke-width="(selectedObstacleId === o.id ? 3 : 2) / fz"
             />
             <polyline
               v-else-if="o.shape === 'polyline' && o.points?.length"
               :points="ptsStr(o.points)"
               fill="none"
               :stroke="selectedObstacleId === o.id ? 'var(--red-60)' : 'var(--orange-40)'"
-              :stroke-width="selectedObstacleId === o.id ? 3 : 2"
+              :stroke-width="(selectedObstacleId === o.id ? 3 : 2) / fz"
             />
             <template v-if="selectedObstacleId === o.id && editable && !drawSession && o.shape === 'polyline' && o.points?.length">
               <circle
@@ -756,10 +774,10 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
                 :key="`pv-${o.id}-${i}`"
                 :cx="p[0]"
                 :cy="p[1]"
-                r="6"
+                :r="6 / fz"
                 fill="#fff"
                 stroke="var(--red-60)"
-                stroke-width="2"
+                :stroke-width="2 / fz"
                 class="handle map-interactive"
                 @mousedown="startVertexDrag('polyline', i, $event, o.id)"
               />
@@ -770,7 +788,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               :x="lbl.x"
               :y="lbl.y"
               text-anchor="middle"
-              font-size="10"
+              :font-size="10 / fz"
               font-weight="700"
               fill="var(--orange-40)"
               pointer-events="none"
@@ -779,13 +797,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               <rect
                 v-for="(p, i) in [[o.x, o.y], [o.x! + o.w!, o.y], [o.x, o.y! + o.h!], [o.x! + o.w!, o.y! + o.h!]]"
                 :key="`rc-${i}`"
-                :x="p[0]! - 4.5"
-                :y="p[1]! - 4.5"
-                width="9"
-                height="9"
+                :x="p[0]! - 4.5 / fz"
+                :y="p[1]! - 4.5 / fz"
+                :width="9 / fz"
+                :height="9 / fz"
                 fill="#fff"
                 stroke="var(--red-60)"
-                stroke-width="2"
+                :stroke-width="2 / fz"
                 class="handle corner"
                 @mousedown="startRectCornerDrag(o.id, i, $event)"
               />
@@ -794,20 +812,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
               <circle
                 :cx="o.cx"
                 :cy="o.cy"
-                r="5"
+                :r="5 / fz"
                 fill="#fff"
                 stroke="var(--red-60)"
-                stroke-width="2"
+                :stroke-width="2 / fz"
                 class="handle map-interactive"
                 @mousedown="startCircleMove(o, $event)"
               />
               <circle
-                :cx="(o.cx ?? 0) + (o.r ?? 0)"
+                :cx="(o.cx ?? 0) + (o.r ?? 0) / fz"
                 :cy="o.cy"
-                r="5"
+                :r="5 / fz"
                 fill="#fff"
                 stroke="var(--red-60)"
-                stroke-width="2"
+                :stroke-width="2 / fz"
                 class="handle map-interactive"
                 @mousedown="startCircleRadiusDrag(o.id, $event)"
               />
@@ -823,23 +841,23 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :points="ptsStr(polylinePreview)"
           fill="none"
           stroke="var(--red-60)"
-          stroke-width="2"
-          stroke-dasharray="6 4"
+          :stroke-width="2 / fz"
+          :stroke-dasharray="`${6 / fz} ${4 / fz}`"
         />
         <circle
           v-for="(p, i) in polyDraft?.points ?? []"
           :key="`dp-${i}`"
           :cx="p[0]"
           :cy="p[1]"
-          r="4"
+          :r="4 / fz"
           fill="var(--red-60)"
         />
         <text
           v-if="draftLengthLabel"
           :x="polylinePreview?.[polylinePreview.length - 1]?.[0] ?? 500"
-          :y="(polylinePreview?.[polylinePreview.length - 1]?.[1] ?? 340) - 12"
+          :y="(polylinePreview?.[polylinePreview.length - 1]?.[1] ?? 340) - 12 / fz"
           text-anchor="middle"
-          font-size="12"
+          :font-size="12 / fz"
           font-weight="800"
           fill="var(--red-60)"
         >{{ draftLengthLabel }}</text>
@@ -849,7 +867,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :x="lbl.x"
           :y="lbl.y"
           text-anchor="middle"
-          font-size="10"
+          :font-size="10 / fz"
           font-weight="700"
           fill="var(--red-60)"
         >{{ lbl.text }}</text>
@@ -861,8 +879,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :height="previewRect.h"
           fill="rgba(255,60,60,0.1)"
           stroke="var(--red-60)"
-          stroke-width="2"
-          stroke-dasharray="6 4"
+          :stroke-width="2 / fz"
+          :stroke-dasharray="`${6 / fz} ${4 / fz}`"
         />
         <circle
           v-if="previewCircle"
@@ -871,8 +889,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :r="previewCircle.r"
           fill="rgba(59,130,246,0.15)"
           stroke="var(--blue-60)"
-          stroke-width="2"
-          stroke-dasharray="6 4"
+          :stroke-width="2 / fz"
+          :stroke-dasharray="`${6 / fz} ${4 / fz}`"
         />
       </g>
 
@@ -944,9 +962,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :class="{ draggable: editableSensors, selected: selectedSensorId === s.id }"
           @mousedown="onSensorDown(s.id, $event)"
         >
-          <circle :cx="s.x" :cy="s.y" r="14" fill="#fff" :stroke="selectedSensorId === s.id ? 'var(--red-65)' : 'var(--red-60)'" stroke-width="2" />
-          <circle :cx="s.x" :cy="s.y" r="5" fill="var(--red-60)" />
-          <text :x="s.x" :y="s.y - 18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--content-primary-a-enabled)">{{ s.id }}</text>
+          <circle :cx="s.x" :cy="s.y" :r="14 / fz" fill="#fff" :stroke="selectedSensorId === s.id ? 'var(--red-65)' : 'var(--red-60)'" :stroke-width="2 / fz" />
+          <circle :cx="s.x" :cy="s.y" :r="5 / fz" fill="var(--red-60)" />
+          <text :x="s.x" :y="s.y - 18 / fz" text-anchor="middle" :font-size="11 / fz" font-weight="700" fill="var(--content-primary-a-enabled)">{{ s.id }}</text>
         </g>
       </g>
 

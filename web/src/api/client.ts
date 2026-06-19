@@ -111,6 +111,16 @@ export async function uploadProjectFile(projectId: string, file: File) {
   return res.json() as Promise<{ id: string; url: string; name: string }>
 }
 
+// Автораспознавание загруженного чертежа → геометрия (контур + элементы) +
+// трансформ подложки (куда положить картинку, чтобы совпала с геометрией).
+export interface RecognizeResult {
+  geometry: GeometryData
+  underlay: { x: number; y: number; w: number; h: number }
+}
+export function recognizeProject(id: string) {
+  return request<RecognizeResult>(`/api/v1/projects/${id}/recognize`, { method: 'POST' })
+}
+
 export function exportProject(id: string, format: 'json' | 'pdf' | 'excel' = 'json') {
   return fetch(`${base}/api/v1/projects/${id}/export?format=${format}`)
 }

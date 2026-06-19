@@ -7,6 +7,8 @@ const props = defineProps<{
   loadGrid?: CalculationData['loadGrid']
   roof?: number[][]
   areaM2?: number
+  /** viewBox холста (zoom-to-fit) — должен совпадать с RoofCanvas, иначе карта «уезжает». */
+  fitBox?: { x: number; y: number; w: number; h: number } | null
 }>()
 
 const wrapRef = ref<HTMLDivElement | null>(null)
@@ -90,14 +92,16 @@ function draw() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, cssW, cssH)
 
-  // Match RoofCanvas SVG viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet"
-  const scale = Math.min(cssW / VIEW_W, cssH / VIEW_H)
-  const offsetX = (cssW - VIEW_W * scale) / 2
-  const offsetY = (cssH - VIEW_H * scale) / 2
+  // Повторяем viewBox RoofCanvas (zoom-to-fit при распознавании, иначе весь холст)
+  // c preserveAspectRatio="xMidYMid meet".
+  const vb = props.fitBox ?? { x: 0, y: 0, w: VIEW_W, h: VIEW_H }
+  const scale = Math.min(cssW / vb.w, cssH / vb.h)
+  const offsetX = (cssW - vb.w * scale) / 2
+  const offsetY = (cssH - vb.h * scale) / 2
 
   const toCanvas = (svgX: number, svgY: number) => ({
-    x: offsetX + svgX * scale,
-    y: offsetY + svgY * scale,
+    x: offsetX + (svgX - vb.x) * scale,
+    y: offsetY + (svgY - vb.y) * scale,
   })
 
   const rb = roofBounds(roof)
@@ -146,7 +150,7 @@ onBeforeUnmount(() => {
   ro?.disconnect()
 })
 
-watch(() => [props.loadGrid, props.roof, props.areaM2], () => draw(), { deep: true })
+watch(() => [props.loadGrid, props.roof, props.areaM2, props.fitBox], () => draw(), { deep: true })
 </script>
 
 <template>

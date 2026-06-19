@@ -4,61 +4,118 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/jung-kurt/gofpdf"
 	"github.com/technonicol/snowbag/api/internal/model"
 	"github.com/xuri/excelize/v2"
 )
 
-func PDF(project *model.Project, calc model.CalculationResult) ([]byte, error) {
+// PDF собирает отчёт по объекту на русском: снеговая нагрузка (зоны, датчики) и,
+// если есть, теплотехнический расчёт. thermal может быть nil.
+func PDF(project *model.Project, calc model.CalculationResult, thermal *model.ThermalCalculation) ([]byte, error) {
 	pdf := gofpdf.New("L", "mm", "A4", "")
 	pdf.SetMargins(12, 12, 12)
+	// Кириллический шрифт (вшит в бинарь) — иначе русский текст не отрисуется.
+	pdf.AddUTF8FontFromBytes("DejaVu", "", dejaVuRegular)
+	pdf.AddUTF8FontFromBytes("DejaVu", "B", dejaVuBold)
 	pdf.AddPage()
-	pdf.SetFont("Helvetica", "B", 14)
-	pdf.Cell(0, 8, pdfSafe("Snowbag — "+project.Name))
-	pdf.Ln(10)
-	pdf.SetFont("Helvetica", "", 10)
-	lines := []string{
-		fmt.Sprintf("Object: %s", project.Name),
-		fmt.Sprintf("Address: %s", project.Address),
-		fmt.Sprintf("City: %s  Snow region: %s  Wind region: %s", project.City, project.SnowRegion, project.WindRegion),
-		fmt.Sprintf("Roof area: %s m2  Snow bags: %s m2  Sensors: %d",
+
+	pdf.SetFont("DejaVu", "B", 14)
+	pdf.Cell(0, 8, "Отчёт по объекту — "+orDash(project.Name))
+	pdf.Ln(11)
+
+	pdf.SetFont("DejaVu", "", 10)
+	for _, line := range []string{
+		"Объект: " + orDash(project.Name),
+		"Адрес: " + orDash(project.Address),
+		fmt.Sprintf("Город: %s   Снеговой район: %s   Ветровой район: %s",
+			orDash(project.City), orDash(project.SnowRegion), orDash(project.WindRegion)),
+		fmt.Sprintf("Площадь кровли: %s м²   Площадь мешков: %s м²   Датчиков: %d",
 			calc.Metrics.RoofArea, calc.Metrics.BagsArea, calc.Metrics.Sensors),
-		fmt.Sprintf("Max load: %s kPa  Coverage: %s%%", calc.Metrics.MaxLoad, calc.Metrics.Coverage),
-		"Norm: SP 20.13330.2016 (amend. 6)",
-	}
-	for _, line := range lines {
-		pdf.Cell(0, 6, pdfSafe(line))
+		fmt.Sprintf("Макс. нагрузка: %s кПа   Покрытие: %s %%", calc.Metrics.MaxLoad, calc.Metrics.Coverage),
+		"Норматив: СП 20.13330.2016 (изм. 6)",
+	} {
+		pdf.Cell(0, 6, line)
 		pdf.Ln(6)
 	}
-	pdf.Ln(4)
-	pdf.SetFont("Helvetica", "B", 11)
-	pdf.Cell(0, 6, pdfSafe("Snow accumulation zones"))
-	pdf.Ln(7)
-	pdf.SetFont("Helvetica", "", 9)
-	for _, b := range calc.Snowbags {
-		pdf.Cell(0, 5, pdfSafe(fmt.Sprintf("%s — %s: %d m2, mu-load %s kPa (%s)", b.ID, b.Name, b.Area, b.Load, b.Risk)))
+
+	// --- Снеговые мешки ---
+	section(pdf, "Зоны снегонакопления")
+	pdf.SetFont("DejaVu", "", 9)
+	if len(calc.Snowbags) == 0 {
+		pdf.Cell(0, 5, "— нет данных (расчёт мешков не выполнен)")
 		pdf.Ln(5)
 	}
-	pdf.Ln(4)
-	pdf.SetFont("Helvetica", "B", 11)
-	pdf.Cell(0, 6, pdfSafe("Sensors"))
-	pdf.Ln(7)
-	pdf.SetFont("Helvetica", "", 9)
+	for _, b := range calc.Snowbags {
+		pdf.Cell(0, 5, fmt.Sprintf("%s — %s: %d м², μ·нагрузка %s кПа (%s)", b.ID, b.Name, b.Area, b.Load, b.Risk))
+		pdf.Ln(5)
+	}
+
+	// --- Датчики ---
+	section(pdf, "Датчики")
+	pdf.SetFont("DejaVu", "", 9)
+	if len(calc.Sensors) == 0 {
+		pdf.Cell(0, 5, "— датчики не размещены")
+		pdf.Ln(5)
+	}
 	for _, s := range calc.Sensors {
 		z := "—"
 		if s.Zone != nil {
 			z = *s.Zone
 		}
-		pdf.Cell(0, 5, pdfSafe(fmt.Sprintf("%s: x=%.0f y=%.0f zone=%s", s.ID, s.X, s.Y, z)))
+		pdf.Cell(0, 5, fmt.Sprintf("%s: x=%.0f y=%.0f зона=%s", s.ID, s.X, s.Y, z))
 		pdf.Ln(5)
 	}
+
+	// --- Теплотехника ---
+	if thermal != nil && thermal.Thermal != nil {
+		t := thermal.Thermal
+		section(pdf, "Теплотехнический расчёт (СП 50.13330)")
+		pdf.SetFont("DejaVu", "", 9)
+		for _, line := range []string{
+			fmt.Sprintf("Температура помещения: %.0f °C   Влажность: %.0f %%", thermal.Input.TIn, thermal.Input.HumidityPct),
+			fmt.Sprintf("R приведённое (Rпр): %.2f   R требуемое (Rтр): %.2f  м²·°C/Вт", t.Rred, t.Rreq),
+			fmt.Sprintf("Коэффициент теплотехнической однородности: %.3f   Запас: %.0f %%", t.R, t.ReservePct),
+			"Вывод: " + orDash(t.Verdict),
+		} {
+			pdf.Cell(0, 5, line)
+			pdf.Ln(5)
+		}
+		if thermal.Vapor != nil {
+			pdf.Cell(0, 5, "Влагонакопление (разд. 8 СП 50): "+orDash(thermal.Vapor.Verdict))
+			pdf.Ln(5)
+		}
+		pdf.Ln(1)
+		pdf.SetFont("DejaVu", "B", 9)
+		pdf.Cell(0, 5, "Состав (снаружи → внутрь):")
+		pdf.Ln(5)
+		pdf.SetFont("DejaVu", "", 9)
+		for _, l := range t.Layers {
+			pdf.Cell(0, 5, fmt.Sprintf("• %s — %s: δ=%.0f мм, λ=%.3f, R=%.2f",
+				orDash(l.Role), l.Material.Name, l.ThicknessMM, l.Material.Lambda, l.R))
+			pdf.Ln(5)
+		}
+	}
+
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func section(pdf *gofpdf.Fpdf, title string) {
+	pdf.Ln(5)
+	pdf.SetFont("DejaVu", "B", 11)
+	pdf.Cell(0, 6, title)
+	pdf.Ln(7)
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "—"
+	}
+	return s
 }
 
 func Excel(project *model.Project, calc model.CalculationResult) ([]byte, error) {
@@ -125,20 +182,6 @@ func Excel(project *model.Project, calc model.CalculationResult) ([]byte, error)
 func cellAt(col, row int) string {
 	c, _ := excelize.CoordinatesToCellName(col, row)
 	return c
-}
-
-func pdfSafe(s string) string {
-	r := strings.NewReplacer("«", "\"", "»", "\"", "—", "-", "μ", "u", "²", "2", "№", "No")
-	out := r.Replace(s)
-	var b strings.Builder
-	for _, ch := range out {
-		if ch < 128 {
-			b.WriteRune(ch)
-		} else {
-			b.WriteRune('?')
-		}
-	}
-	return b.String()
 }
 
 func ParseCalculation(raw []byte) (model.CalculationResult, error) {

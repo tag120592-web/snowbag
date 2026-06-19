@@ -58,6 +58,7 @@ func (h *Handler) Routes() http.Handler {
 		r.Post("/projects/{id}/recalculate", h.recalculate)
 		r.Post("/projects/{id}/thermal", h.thermal)
 		r.Post("/projects/{id}/files", h.uploadFile)
+		r.Post("/projects/{id}/recognize", h.recognize)
 		r.Get("/projects/{id}/underlay", h.getUnderlay)
 		r.Get("/projects/{id}/export", h.export)
 	})
@@ -526,7 +527,8 @@ func (h *Handler) export(w http.ResponseWriter, r *http.Request) {
 			"exportedAt":    time.Now().Format(time.RFC3339),
 		})
 	case "pdf":
-		data, err := export.PDF(project, calc)
+		thermal, _ := h.store.GetLatestThermalCalculation(r.Context(), id)
+		data, err := export.PDF(project, calc, thermal)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
