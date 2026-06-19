@@ -3,7 +3,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { CalculationData, GeometryData } from '@/types'
-import { buildRoofScene, disposeObject3D, fitCameraToGroup, type SnowCoverHandle } from '@/utils/roofThreeScene'
+import { buildRoofScene, disposeObject3D, fitCameraToGroup } from '@/utils/roofThreeScene'
 import { roofBounds } from '@/utils/roof3d'
 import { VIEW_H, VIEW_W } from '@/composables/useRoofDrawing'
 
@@ -20,12 +20,8 @@ let scene: THREE.Scene | null = null
 let camera: THREE.PerspectiveCamera | null = null
 let controls: OrbitControls | null = null
 let content: THREE.Group | null = null
-let snowCover: SnowCoverHandle | null = null
 let snowfall: THREE.Points | null = null
 let snowVelocities: Float32Array | null = null
-let snowAccumulation = 0
-let snowAccumStart = 0
-const SNOW_ACCUM_DURATION_MS = 12000
 const SNOW_PARTICLE_COUNT = 1800
 let raf = 0
 let resizeObserver: ResizeObserver | null = null
@@ -82,8 +78,6 @@ function initSnowfall() {
     }),
   )
   scene.add(snowfall)
-  snowAccumulation = 0
-  snowAccumStart = performance.now()
 }
 
 function updateSnowfall() {
@@ -115,12 +109,6 @@ function updateSnowfall() {
     pos.setXYZ(i, x, y, z)
   }
   pos.needsUpdate = true
-
-  if (snowCover) {
-    const elapsed = performance.now() - snowAccumStart
-    snowAccumulation = Math.min(1, elapsed / SNOW_ACCUM_DURATION_MS)
-    snowCover.setAccumulation(snowAccumulation)
-  }
 }
 
 function rebuildScene() {
@@ -131,16 +119,12 @@ function rebuildScene() {
     disposeObject3D(content)
     content = null
   }
-  snowCover?.dispose()
-  snowCover = null
   disposeSnowfall()
 
-  const built = buildRoofScene(props.geometry, props.calculation, {
+  content = buildRoofScene(props.geometry, props.calculation, {
     ...props.layers,
     bags: false,
   })
-  content = built.group
-  snowCover = built.snowCover
   scene.add(content)
   fitCameraToGroup(camera, controls, content)
   initSnowfall()
@@ -211,8 +195,6 @@ function destroy() {
     disposeObject3D(content)
     content = null
   }
-  snowCover?.dispose()
-  snowCover = null
   disposeSnowfall()
 
   controls?.dispose()
@@ -242,15 +224,7 @@ watch(
 <template>
   <div ref="containerRef" class="scene3d">
     <div class="overlay">
-      <p class="title">Распределение толщины снегового покрова</p>
-      <ul class="legend">
-        <li><span class="swatch" style="background:#7ec8e8" />0–10 см</li>
-        <li><span class="swatch" style="background:#6ecf8f" />10–20 см</li>
-        <li><span class="swatch" style="background:#f5d547" />20–30 см</li>
-        <li><span class="swatch" style="background:#f5a623" />30–50 см</li>
-        <li><span class="swatch" style="background:#e11b11" />&gt;50 см</li>
-      </ul>
-      <p class="hint">Снег накапливается на кровле · перетащите для вращения</p>
+      <p class="hint">Перетащите для вращения</p>
     </div>
   </div>
 </template>
@@ -277,44 +251,13 @@ watch(
   z-index: 1;
   background: rgba(255, 255, 255, 0.88);
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   box-shadow: var(--shadow-small);
-  max-width: 220px;
-}
-
-.title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--content-primary-a-enabled);
-}
-
-.legend {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--content-secondary-enabled);
-}
-
-.legend li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.swatch {
-  width: 14px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
 }
 
 .hint {
-  margin: 8px 0 0;
-  font-size: 10px;
+  margin: 0;
+  font-size: 11px;
   color: var(--content-tertiary-enabled);
 }
 </style>
