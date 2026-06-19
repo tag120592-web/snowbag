@@ -3,7 +3,10 @@ package store
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/technonicol/snowbag/api/internal/model"
 )
@@ -142,4 +145,33 @@ func (s *Store) SaveThermalCalculation(ctx context.Context, c model.ThermalCalcu
 		 VALUES ($1, $2, $3, $4, $5)`,
 		c.ID, c.ProjectID, input, thermal, vapor)
 	return err
+}
+
+// GetLatestThermalCalculation возвращает последний сохранённый теплотехнический расчёт
+// проекта (вход + ТТР + влага) или nil, если расчёта нет. Нужен для PDF-отчёта.
+func (s *Store) GetLatestThermalCalculation(ctx context.Context, projectID uuid.UUID) (*model.ThermalCalculation, error) {
+	var c model.ThermalCalculation
+	var input, thermal, vapor []byte
+	err := s.pool.QueryRow(ctx, `
+		SELECT id, project_id, input, thermal_result, vapor_result, created_at
+		FROM thermal_calculations
+		WHERE project_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1`, projectID).Scan(&c.ID, &c.ProjectID, &input, &thermal, &vapor, &c.CreatedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	_ = json.Unmarshal(input, &c.Input)
+	if len(thermal) > 0 {
+		c.Thermal = &model.ThermalResult{}
+		_ = json.Unmarshal(thermal, c.Thermal)
+	}
+	if len(vapor) > 0 {
+		c.Vapor = &model.VaporResult{}
+		_ = json.Unmarshal(vapor, c.Vapor)
+	}
+	return &c, nil
 }

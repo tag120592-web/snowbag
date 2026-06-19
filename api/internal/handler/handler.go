@@ -527,7 +527,8 @@ func (h *Handler) export(w http.ResponseWriter, r *http.Request) {
 			"exportedAt":    time.Now().Format(time.RFC3339),
 		})
 	case "pdf":
-		data, err := export.PDF(project, calc)
+		thermal, _ := h.store.GetLatestThermalCalculation(r.Context(), id)
+		data, err := export.PDF(project, calc, thermal)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err.Error())
 			return
