@@ -962,9 +962,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
           :class="{ draggable: editableSensors, selected: selectedSensorId === s.id }"
           @mousedown="onSensorDown(s.id, $event)"
         >
-          <circle :cx="s.x" :cy="s.y" r="14" fill="#fff" :stroke="selectedSensorId === s.id ? 'var(--red-65)' : 'var(--red-60)'" stroke-width="2" />
-          <circle :cx="s.x" :cy="s.y" r="5" fill="var(--red-60)" />
-          <text :x="s.x" :y="s.y - 18" text-anchor="middle" font-size="11" font-weight="700" fill="var(--content-primary-a-enabled)">{{ s.id }}</text>
+          <circle :cx="s.x" :cy="s.y" :r="14 / fz" fill="#fff" :stroke="selectedSensorId === s.id ? 'var(--red-65)' : 'var(--red-60)'" :stroke-width="2 / fz" />
+          <circle :cx="s.x" :cy="s.y" :r="5 / fz" fill="var(--red-60)" />
+          <text :x="s.x" :y="s.y - 18 / fz" text-anchor="middle" :font-size="11 / fz" font-weight="700" fill="var(--content-primary-a-enabled)">{{ s.id }}</text>
         </g>
       </g>
 

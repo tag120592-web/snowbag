@@ -119,7 +119,7 @@ const saving = ref(false)
 const uploading = ref(false)
 const error = ref('')
 const view3d = ref(false)
-const canvasDisplayMode = ref<'zones' | 'heatmap' | 'both'>('both')
+const canvasDisplayMode = ref<'zones' | 'heatmap' | 'both'>('zones')
 const underlayUrl = ref('')
 const hasUnderlay = ref(false)
 const recognizing = ref(false)
@@ -1028,7 +1028,7 @@ const footerLabel = computed(() => {
   if (id === 'bags') return 'Сформировать схему'
   if (id === 'thermo-params') return 'Далее'
   if (id === 'thermo-hetero') return 'Рассчитать теплотехнику'
-  if (id === 'result') return 'Экспорт JSON'
+  if (id === 'result') return 'Скачать отчёт (PDF)'
   if (id === 'roof') return 'Подтвердить и далее'
   return 'Далее'
 })
@@ -1040,7 +1040,7 @@ function onFooterNext() {
   }
   const id = steps.value[step.value].id
   if (id === 'result') {
-    void downloadExport(projectId.value!, 'json')
+    void downloadExport(projectId.value!, 'pdf')
     return
   }
   void next()
@@ -1322,8 +1322,8 @@ const roofElements = computed(() =>
             :calculation="calculation"
             :north-deg="northDeg"
             :underlay-url="underlaySrc"
-            :underlay-transform="steps[step].id === 'roof' ? recognizedUnderlay : null"
-            :fit-box="steps[step].id === 'roof' ? recognizedFitBox : null"
+            :underlay-transform="recognizedUnderlay"
+            :fit-box="recognizedFitBox"
             :view3d="view3d && ['bags', 'result'].includes(steps[step].id)"
             :selected-bag-id="selectedBagId"
             :selected-sensor-id="selectedSensorId"
@@ -1357,6 +1357,7 @@ const roofElements = computed(() =>
             :load-grid="calculation.loadGrid"
             :roof="geometry.roof"
             :area-m2="geometry.areaM2 ?? project?.areaM2"
+            :fit-box="recognizedFitBox"
           />
         </div>
         <div v-if="['bags', 'result'].includes(steps[step].id)" class="canvas-tools">
