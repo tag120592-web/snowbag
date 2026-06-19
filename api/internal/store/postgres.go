@@ -289,6 +289,20 @@ func (s *Store) GetUnderlayFile(ctx context.Context, projectID uuid.UUID) (*mode
 	return &f, nil
 }
 
+// GetLatestPDFKey возвращает ключ и имя последнего загруженного в проект PDF —
+// источник для распознавания (подложка — это растровый PNG, для вектора не годится).
+func (s *Store) GetLatestPDFKey(ctx context.Context, projectID uuid.UUID) (key, name string, err error) {
+	err = s.pool.QueryRow(ctx, `
+		SELECT storage_key, name FROM project_files
+		WHERE project_id = $1 AND (mime_type = 'application/pdf' OR name ILIKE '%.pdf')
+		ORDER BY created_at DESC
+		LIMIT 1`, projectID).Scan(&key, &name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", "", nil
+	}
+	return key, name, err
+}
+
 func (s *Store) ListProjectStorageKeys(ctx context.Context, projectID uuid.UUID) ([]string, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT storage_key FROM project_files WHERE project_id = $1`, projectID)

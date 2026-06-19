@@ -16,6 +16,7 @@ type Config struct {
 	S3Bucket           string
 	CORSOrigins        []string
 	YandexMapsAPIKey   string
+	RecognizerURL      string
 }
 
 func Load() Config {
@@ -30,6 +31,7 @@ func Load() Config {
 		S3Bucket:         env("S3_BUCKET", "snowbag-files"),
 		CORSOrigins:      splitEnv("CORS_ORIGIN", "http://localhost:5173,http://localhost:3000"),
 		YandexMapsAPIKey: firstEnv("YANDEX_MAPS_API_KEY", "VITE_YANDEX_MAPS_API_KEY"),
+		RecognizerURL:    env("RECOGNIZER_URL", "http://host.docker.internal:8090"),
 	}
 }
 

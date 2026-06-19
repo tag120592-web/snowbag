@@ -16,6 +16,7 @@ import {
   getProject,
   lookupClimate,
   projectUnderlayUrl,
+  recognizeProject,
   updateProject,
   uploadProjectFile,
   type ClimateLookupResult,
@@ -121,6 +122,21 @@ const view3d = ref(false)
 const canvasDisplayMode = ref<'zones' | 'heatmap' | 'both'>('both')
 const underlayUrl = ref('')
 const hasUnderlay = ref(false)
+const recognizing = ref(false)
+const recognizeNote = ref('')
+const recognizedUnderlay = ref<{ x: number; y: number; w: number; h: number } | null>(null)
+// Окно зума: вписываем распознанную подложку в рабочую область с полями, сохраняя
+// пропорцию холста (1000×680). Геометрия остаётся в реальном масштабе — меняем только вид.
+const recognizedFitBox = computed(() => {
+  const u = recognizedUnderlay.value
+  if (!u) return null
+  const aspect = 1000 / 680
+  let w = u.w * 1.18
+  let h = u.h * 1.18
+  if (w / h < aspect) w = h * aspect
+  else h = w / aspect
+  return { x: u.x + u.w / 2 - w / 2, y: u.y + u.h / 2 - h / 2, w, h }
+})
 const showUnderlay = ref(true)
 const primarySource = ref<'file' | 'map' | null>(null)
 const orthogonalMode = ref(false)
@@ -450,9 +466,42 @@ async function saveDraft() {
   }
 }
 
+// Автораспознавание чертежа при переходе «Загрузка данных → Геометрия и элементы».
+// Не перезатираем уже нарисованный контур; при сбое — тихо разрешаем ручную обводку.
+async function maybeRecognize() {
+  if (!projectId.value || archiveView.value) return
+  if ((geometry.value.roof?.length ?? 0) >= 3) return // контур уже есть — не трогаем
+  if (!hasUnderlay.value) return // нечего распознавать
+  recognizing.value = true
+  recognizeNote.value = ''
+  try {
+    const res = await recognizeProject(projectId.value)
+    const g = res.geometry
+    if ((g.roof?.length ?? 0) >= 3) {
+      geometry.value = {
+        ...geometry.value,
+        roof: g.roof,
+        obstacles: g.obstacles ?? [],
+        areaM2: g.areaM2,
+      }
+      recognizedUnderlay.value = res.underlay ?? null // совместить подложку с контуром
+      editTarget.value = 'roof' // сразу выбираем контур — можно править точки
+      maxReached.value = Math.max(maxReached.value, step.value + 1)
+      recognizeNote.value = `Распознано: контур + ${g.obstacles?.length ?? 0} элем. Проверьте и поправьте.`
+    }
+  } catch {
+    recognizeNote.value = 'Автораспознавание не удалось — обведите контур вручную.'
+  } finally {
+    recognizing.value = false
+  }
+}
+
 async function next() {
   if (archiveView.value) return
   const id = steps.value[step.value].id
+  if (id === 'upload') {
+    await maybeRecognize()
+  }
   if (id === 'roof') {
     await saveDraft()
   }
@@ -529,8 +578,18 @@ function onPdfPickerCancel() {
 }
 
 async function onPdfPageConfirm(payload: { page: number; file: File }) {
+  const originalPdf = pdfPickerFile.value // оригинал вектор-PDF — для распознавания
   pdfPickerFile.value = null
   underlayPage.value = payload.page
+  // Сначала сохраняем оригинал PDF (источник распознавания), затем PNG —
+  // он загружается последним и становится визуальной подложкой.
+  if (originalPdf && projectId.value) {
+    try {
+      await uploadProjectFile(projectId.value, originalPdf)
+    } catch {
+      /* не критично: подложка всё равно загрузится ниже */
+    }
+  }
   await uploadUnderlayFile(payload.file, { page: payload.page })
 }
 
@@ -1263,6 +1322,8 @@ const roofElements = computed(() =>
             :calculation="calculation"
             :north-deg="northDeg"
             :underlay-url="underlaySrc"
+            :underlay-transform="steps[step].id === 'roof' ? recognizedUnderlay : null"
+            :fit-box="steps[step].id === 'roof' ? recognizedFitBox : null"
             :view3d="view3d && ['bags', 'result'].includes(steps[step].id)"
             :selected-bag-id="selectedBagId"
             :selected-sensor-id="selectedSensorId"
@@ -1592,17 +1653,23 @@ const roofElements = computed(() =>
       </div>
     </div>
 
+    <div v-if="recognizeNote" class="recognize-note">{{ recognizeNote }}</div>
     <footer v-if="!calculating" class="footer">
-      <button class="btn" :disabled="step === 0" @click="back">← Назад</button>
+      <button class="btn" :disabled="step === 0 || recognizing" @click="back">← Назад</button>
       <span class="step-info">Шаг {{ step + 1 }} из {{ steps.length }}</span>
-      <button v-if="!archiveView" class="btn secondary" :disabled="saving" @click="saveDraft">{{ saving ? 'Сохранение…' : 'Сохранить черновик' }}</button>
-      <button class="btn accent" @click="onFooterNext">{{ footerLabel }}</button>
+      <button v-if="!archiveView" class="btn secondary" :disabled="saving || recognizing" @click="saveDraft">{{ saving ? 'Сохранение…' : 'Сохранить черновик' }}</button>
+      <button class="btn accent" :disabled="recognizing" @click="onFooterNext">{{ recognizing ? 'Распознаём чертёж…' : footerLabel }}</button>
     </footer>
   </div>
 </template>
 
 <style scoped>
 .layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.recognize-note {
+  padding: 8px 24px; font-size: 13px; font-weight: 600;
+  background: var(--content-accent-subtle, #eef6ff); color: var(--content-accent-enabled, #0a66c2);
+  border-top: 1px solid var(--border-secondary-enabled);
+}
 .stepper {
   height: 72px; display: flex; align-items: center; padding: 0 24px;
   background: #fff; border-bottom: 1px solid var(--border-secondary-enabled); gap: 8px;
