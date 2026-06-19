@@ -26,10 +26,14 @@ function sceneOrigin(): [number, number] {
 }
 
 function toShape(points: number[][], ox: number, oz: number): THREE.Shape {
+  // ВАЖНО: плита проходит extrude + rotateX(-90°), который инвертирует ось формы в Z.
+  // Чтобы footprint плиты совпал с парапетом (svgToScene: z = oz - y), здесь берём
+  // pz = y - oz — после поворота получится oz - y. Иначе плита зеркалится по Z и на
+  // несимметричной кровле «разъезжается» с парапетом.
   const shape = new THREE.Shape()
   points.forEach(([x, y], i) => {
     const px = x - ox
-    const pz = oz - y
+    const pz = y - oz
     if (i === 0) shape.moveTo(px, pz)
     else shape.lineTo(px, pz)
   })
@@ -149,7 +153,9 @@ function buildObstacle(o: Obstacle, ox: number, oz: number): THREE.Object3D {
     cap.position.set(px, roofSlabTopY() + height, pz)
     g.add(cap)
   } else if (o.shape === 'circle' && o.r && o.cx != null && o.cy != null) {
-    const r = o.r
+    // o.r — размер 2D-маркера (в ед. холста), как реальный радиус в 3D он огромен.
+    // Точечные элементы (воронки/проходки) малы → ограничиваем радиус.
+    const r = Math.min(o.r, 2)
     const height = Math.max(0.4, metersToZ(o.hM ?? 0.4))
     const [px, pz] = svgToScene(o.cx, o.cy, ox, oz)
     const cyl = new THREE.Mesh(
